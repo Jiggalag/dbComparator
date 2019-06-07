@@ -212,10 +212,19 @@ class MainUI(QWidget):
         if all([self.cb_entities.isChecked(), self.cb_reports.isChecked()]):
             self.cb_entities.setEnabled(True)
             self.cb_reports.setEnabled(True)
+            self.day_summary_mode.setEnabled(True)
+            self.section_summary_mode.setEnabled(True)
+            self.detailed_mode.setEnabled(True)
         elif self.cb_entities.isChecked():
             self.cb_entities.setEnabled(False)
+            self.day_summary_mode.setEnabled(False)
+            self.section_summary_mode.setEnabled(False)
+            self.detailed_mode.setEnabled(False)
         elif self.cb_reports.isChecked():
             self.cb_reports.setEnabled(False)
+            self.day_summary_mode.setEnabled(True)
+            self.section_summary_mode.setEnabled(True)
+            self.detailed_mode.setEnabled(True)
 
     def clear_all(self):
         self.le_prod_host.clear()
