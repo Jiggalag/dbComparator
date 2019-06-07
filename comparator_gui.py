@@ -599,35 +599,6 @@ class MainUI(QWidget):
             self.btn_set_configuration.setEnabled(True)
             self.calculate_table_list()
 
-    def check_prod_db(self):
-        prod_dict = {
-            'host': self.le_prod_host.text(),
-            'user': self.le_prod_user.text(),
-            'password': self.le_prod_password.text(),
-            'db': self.le_prod_db.text()
-        }
-        try:
-            self.prod_tables = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger).get_tables()
-            self.logger.info(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} established successfully!")
-            self.change_bar_message('prod', True)
-            return True
-        except pymysql.OperationalError as err:
-            self.logger.warn(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} failed\n\n{err.args[1]}")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} "
-                                f"failed\n\n{err.args[1]}",
-                                QMessageBox.Ok, QMessageBox.Ok)
-            self.change_bar_message('prod', False)
-            return False
-        except pymysql.InternalError as err:
-            self.logger.warn(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} failed\n\n{err.args[1]}")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} "
-                                f"failed\n\n{err.args[1]}",
-                                QMessageBox.Ok, QMessageBox.Ok)
-            self.change_bar_message('prod', False)
-            return False
-
     def check_prod_sqlhost(self):
         empty_fields = False
         if not self.le_prod_host.text():
@@ -662,6 +633,26 @@ class MainUI(QWidget):
                                 QMessageBox.Ok, QMessageBox.Ok)
             return False
 
+    def check_prod_db(self):
+        prod_dict = {
+            'host': self.le_prod_host.text(),
+            'user': self.le_prod_user.text(),
+            'password': self.le_prod_password.text(),
+            'db': self.le_prod_db.text()
+        }
+        self.prod_tables = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger).get_tables()
+        if self.prod_tables is not None:
+            self.logger.info(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} established successfully!")
+            self.change_bar_message('prod', True)
+            return True
+        else:
+            self.logger.warn(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} failed")
+            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
+                                f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} "
+                                f"failed\n\n", QMessageBox.Ok, QMessageBox.Ok)
+            self.change_bar_message('prod', False)
+            return False
+
     def check_test_db(self):
         test_dict = {
             'host': self.le_test_host.text(),
@@ -669,27 +660,20 @@ class MainUI(QWidget):
             'password': self.le_test_password.text(),
             'db': self.le_test_db.text()
         }
-        try:
-            self.test_tables = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger).get_tables()
+        self.test_tables = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger).get_tables()
+        if self.test_tables is not None:
             self.logger.info(f"Connection to db {test_dict.get('host')}/"
                              f"{test_dict.get('db')} established successfully!")
             self.change_bar_message('test', True)
             return True
-        except pymysql.OperationalError as err:
-            self.logger.warn(f"Connection to {test_dict.get('host')}/{test_dict.get('db')} failed\n\n{err.args[1]}")
+        else:
+            self.logger.warn(f"Connection to {test_dict.get('host')}/{test_dict.get('db')} failed")
             QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {test_dict.get('host')}/{test_dict.get('db')} failed\n\n{err.args[1]}",
+                                f"Connection to {test_dict.get('host')}/{test_dict.get('db')} failed\n\n",
                                 QMessageBox.Ok, QMessageBox.Ok)
             self.change_bar_message('test', False)
             return False
-        except pymysql.InternalError as err:
-            self.logger.warn(f"Connection to {test_dict.get('host')}/{test_dict.get('db')} failed\n\n{err.args[1]}")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {test_dict.get('host')}/{test_dict.get('db')} "
-                                f"failed\n\n{err.args[1]}",
-                                QMessageBox.Ok, QMessageBox.Ok)
-            self.change_bar_message('test', False)
-            return False
+
 
     def check_test_sqlhost(self):
         empty_fields = False

@@ -12,19 +12,17 @@ class DbAlchemyHelper:
         self.user = connect_parameters.get('user')
         self.password = connect_parameters.get('password')
         self.db = connect_parameters.get('db')
-        if self.db is None:
-            self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}')
-        else:
-            self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/'
-                                        f'{self.db}?charset=utf8mb4')
-        try:
-            self.insp = sqlalchemy.inspect(self.engine)
-        except sqlalchemy.exc.InternalError as e:
-            self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}')
-            self.insp = sqlalchemy.inspect(self.engine)
-            logger.error(e.args[0])
-        self.db_list = self.insp.get_schema_names()
+        self.db_not_found = False
+        self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}')
         self.connection = self.engine.connect()
+        self.insp = sqlalchemy.inspect(self.engine)
+        self.db_list = self.insp.get_schema_names()
+        if self.db is not None and self.db_list:
+            if self.db not in self.db_list:
+                self.db_not_found = True
+            else:
+                self.connection.execute(f'USE {self.db};')
+
         self.logger = logger
         self.hide_columns = [
             'archived',
@@ -103,7 +101,7 @@ class DbAlchemyHelper:
             return None
 
     def get_tables(self):
-        if self.connection is not None:
+        if self.connection is not None and not self.db_not_found:
             show_tables = (f"SELECT DISTINCT(table_name) FROM information_schema.columns "
                            f"WHERE table_schema LIKE '{self.db}';")
             result = list()
