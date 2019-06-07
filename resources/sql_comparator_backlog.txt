@@ -1,0 +1,33 @@
+Enchancements:
+
+1. Add try/except construction in case of defining non-existent columns/tables.
+2. Comparing step should be moved from UI. Instead of manually possibility of setting comparing step I should implement
+feature which automatically changes comparing step in case of slow or fast connection. Logic: if comparing speed lower
+than some hardcoded value, I should decrease comparing step.
+3. Implement correct working of table timeout (probably, we should stop query, if timeout falls).
+? 4. Great UI refactoring - move different element groups to different classes.
+5. Disable checking mode group if "Only reports flag" disabled.
+6. UI hangs and disables during comparing DBs. Add modal window with progress bar and some information about
+progress of comparing. Probably, we should generate all sql-queries before running and use this queries to calculate
+comparing progress.
+? 7. Add QSplitters
+? 8. Probably remove Schema columns field, and move this data to hardcode.
+? 9. Status bar should updates in background, application should ping servers by some timeout
+10. Bug. datetime writed to result file in format datetime(2018-08-09) it's incorrect.
+11. Implement skip_column QLineEdit as skip_table.
+12. If schema of some table differs we should add this table to skip_table list.
+
+Epics:
+0. Support dataframe comparing.
+1. Present summary information more flexible.
+2. Probably, add functional for cloning databases.
+
+MUST!
+
+1. Implement importing diff-results to html.
+
+Support dataframes roadmap:
+
+0. Check correctness of day-summary mode.
+1. Check correctness of section-summary mode.
+2. Check correctness of detailed mode.
