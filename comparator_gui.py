@@ -344,109 +344,112 @@ class MainUI(QWidget):
         current_dir = f'{os.getcwd()}/resources/properties/'
         fname = QFileDialog.getOpenFileName(PyQt5.QtWidgets.QFileDialog(), 'Open file', current_dir)[0]
         self.clear_all()
-        with open(fname, 'r') as file:
-            data = file.read()
-            for record in data.split('\n'):
-                string = record.replace(' ', '')
-                value = string[string.find('=') + 1:]
-                if 'prod.host' in string:
-                    self.set_value(self.le_prod_host, value)
-                if 'prod.user' in string:
-                    self.set_value(self.le_prod_user, value)
-                if 'prod.password' in string:
-                    self.set_value(self.le_prod_password, value)
-                if 'prod.db' in string:
-                    self.le_prod_db.show()
-                    self.prod_db_label.show()
-                    self.set_value(self.le_prod_db, value)
-                elif 'test.host' in string:
-                    self.set_value(self.le_test_host, value)
-                elif 'test.user' in string:
-                    self.set_value(self.le_test_user, value)
-                elif 'test.password' in string:
-                    self.set_value(self.le_test_password, value)
-                elif 'test.db' in string:
-                    self.test_db_label.show()
-                    self.le_test_db.show()
-                    self.set_value(self.le_test_db, value)
-                elif 'only_tables' in string:
-                    self.set_value(self.le_only_tables, value)
-                elif 'skip_tables' in string:
-                    self.set_value(self.le_excluded_tables, value)
-                elif 'comparing_step' in string:
-                    self.comparing_step = value
-                elif 'depth_report_check' in string:
-                    self.depth_report_check = value
-                elif 'schema_columns' in string:
-                    self.schema_columns = value
-                elif 'retry_attempts' in string:
-                    self.retry_attempts = value
-                elif 'path_to_logs' in string:
-                    self.path_to_logs = value
-                elif 'send_mail_to' in string:
-                    self.set_value(self.le_send_mail_to, value)
-                elif 'skip_columns' in string:
-                    self.set_value(self.le_skip_columns, value)
-                elif 'compare_schema' in string:
-                    compare_schema = value
-                    if compare_schema == 'True':
-                        if self.cb_enable_schema_checking.isChecked():
-                            pass
+        try:
+            with open(fname, 'r') as file:
+                data = file.read()
+                for record in data.split('\n'):
+                    string = record.replace(' ', '')
+                    value = string[string.find('=') + 1:]
+                    if 'prod.host' in string:
+                        self.set_value(self.le_prod_host, value)
+                    if 'prod.user' in string:
+                        self.set_value(self.le_prod_user, value)
+                    if 'prod.password' in string:
+                        self.set_value(self.le_prod_password, value)
+                    if 'prod.db' in string:
+                        self.le_prod_db.show()
+                        self.prod_db_label.show()
+                        self.set_value(self.le_prod_db, value)
+                    elif 'test.host' in string:
+                        self.set_value(self.le_test_host, value)
+                    elif 'test.user' in string:
+                        self.set_value(self.le_test_user, value)
+                    elif 'test.password' in string:
+                        self.set_value(self.le_test_password, value)
+                    elif 'test.db' in string:
+                        self.test_db_label.show()
+                        self.le_test_db.show()
+                        self.set_value(self.le_test_db, value)
+                    elif 'only_tables' in string:
+                        self.set_value(self.le_only_tables, value)
+                    elif 'skip_tables' in string:
+                        self.set_value(self.le_excluded_tables, value)
+                    elif 'comparing_step' in string:
+                        self.comparing_step = value
+                    elif 'depth_report_check' in string:
+                        self.depth_report_check = value
+                    elif 'schema_columns' in string:
+                        self.schema_columns = value
+                    elif 'retry_attempts' in string:
+                        self.retry_attempts = value
+                    elif 'path_to_logs' in string:
+                        self.path_to_logs = value
+                    elif 'send_mail_to' in string:
+                        self.set_value(self.le_send_mail_to, value)
+                    elif 'skip_columns' in string:
+                        self.set_value(self.le_skip_columns, value)
+                    elif 'compare_schema' in string:
+                        compare_schema = value
+                        if compare_schema == 'True':
+                            if self.cb_enable_schema_checking.isChecked():
+                                pass
+                            else:
+                                self.cb_enable_schema_checking.setChecked(True)
                         else:
-                            self.cb_enable_schema_checking.setChecked(True)
-                    else:
-                        if self.cb_enable_schema_checking.isChecked():
-                            self.cb_enable_schema_checking.setChecked(False)
+                            if self.cb_enable_schema_checking.isChecked():
+                                self.cb_enable_schema_checking.setChecked(False)
+                            else:
+                                pass
+                    elif 'fail_with_first_error' in string:
+                        only_first_error = value
+                        if only_first_error == 'True':
+                            if self.cb_fail_with_first_error.isChecked():
+                                pass
+                            else:
+                                self.cb_fail_with_first_error.setChecked(True)
                         else:
-                            pass
-                elif 'fail_with_first_error' in string:
-                    only_first_error = value
-                    if only_first_error == 'True':
-                        if self.cb_fail_with_first_error.isChecked():
-                            pass
+                            if self.cb_fail_with_first_error.isChecked():
+                                self.cb_fail_with_first_error.setChecked(False)
+                            else:
+                                pass
+                    elif 'reports' in string:
+                        reports = value
+                        if reports == 'True':
+                            if self.cb_reports.isChecked():
+                                pass
+                            else:
+                                self.cb_reports.setChecked(True)
                         else:
-                            self.cb_fail_with_first_error.setChecked(True)
-                    else:
-                        if self.cb_fail_with_first_error.isChecked():
-                            self.cb_fail_with_first_error.setChecked(False)
+                            if self.cb_reports.isChecked():
+                                self.cb_reports.setChecked(False)
+                            else:
+                                pass
+                    elif 'entities' in string:
+                        entities = value
+                        if entities == 'True':
+                            if self.cb_entities.isChecked():
+                                pass
+                            else:
+                                self.cb_entities.setChecked(True)
                         else:
-                            pass
-                elif 'reports' in string:
-                    reports = value
-                    if reports == 'True':
-                        if self.cb_reports.isChecked():
-                            pass
+                            if self.cb_entities.isChecked():
+                                self.cb_entities.setChecked(False)
+                            else:
+                                pass
+                    elif 'logging_level' in string:
+                        self.logging_level = value
+                    elif 'table_timeout' in string:
+                        self.table_timeout = value
+                    elif 'mode' in string:
+                        mode = value
+                        if mode == 'day-sum':
+                            self.day_summary_mode.setChecked(True)
+                        elif mode == 'section-sum':
+                            self.section_summary_mode.setChecked(True)
                         else:
-                            self.cb_reports.setChecked(True)
-                    else:
-                        if self.cb_reports.isChecked():
-                            self.cb_reports.setChecked(False)
-                        else:
-                            pass
-                elif 'entities' in string:
-                    entities = value
-                    if entities == 'True':
-                        if self.cb_entities.isChecked():
-                            pass
-                        else:
-                            self.cb_entities.setChecked(True)
-                    else:
-                        if self.cb_entities.isChecked():
-                            self.cb_entities.setChecked(False)
-                        else:
-                            pass
-                elif 'logging_level' in string:
-                    self.logging_level = value
-                elif 'table_timeout' in string:
-                    self.table_timeout = value
-                elif 'mode' in string:
-                    mode = value
-                    if mode == 'day-sum':
-                        self.day_summary_mode.setChecked(True)
-                    elif mode == 'section-sum':
-                        self.section_summary_mode.setChecked(True)
-                    else:
-                        self.detailed_mode.setChecked(True)
+                            self.detailed_mode.setChecked(True)
+        except FileNotFoundError as err:
+            self.logger.warn(f'File not found, or, probably, you just pressed cancel. Warn: {err.args[1]}')
 
         # Set tooltips
 
@@ -569,7 +572,7 @@ class MainUI(QWidget):
         file_name, _ = QFileDialog.getSaveFileName(PyQt5.QtWidgets.QFileDialog(), "QFileDialog.getSaveFileName()",  "",
                                                    "All Files (*);;Text Files (*.txt)")
         if file_name:
-            print(file_name)
+            self.logger(f'Configuration successfully saved to {file_name}')
             with open(file_name, 'w') as file:
                 file.write('\n'.join(text))
 
@@ -827,6 +830,7 @@ class MainWindow(QMainWindow):
         self.statusBar.showMessage('Prod disconnected, test disconnected')
         self.ex = MainUI(self.statusBar)
         self.setCentralWidget(self.ex)
+        self.logger = Logger('DEBUG')
 
         self.setGeometry(300, 300, 900, 600)
         self.setWindowTitle('dbComparator')
