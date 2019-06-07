@@ -3,13 +3,13 @@ from PyQt5.QtWidgets import QListView, QDialog, QGridLayout, QPushButton
 
 
 class ClickableItemsView(QDialog):
-    def __init__(self, tables, selected_items):
+    def __init__(self, item_list, selected_items):
         super().__init__()
         grid = QGridLayout()
         grid.setSpacing(10)
         self.setLayout(grid)
         self.selected_items = selected_items
-        self.tables = tables
+        self.item_list = item_list
         self.model = QStandardItemModel()
 
         btn_ok = QPushButton('OK', self)
@@ -29,7 +29,7 @@ class ClickableItemsView(QDialog):
         self.show()
 
     def init_items(self):
-        for table in self.tables:
+        for table in self.item_list:
             item = QStandardItem(table)
             item.setCheckState(0)
             if item.text() in self.selected_items:

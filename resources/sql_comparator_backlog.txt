@@ -9,8 +9,7 @@ progress of comparing. Probably, we should generate all sql-queries before runni
 comparing progress.
 ? 4. Status bar should updates in background, application should ping servers by some timeout
 5. Bug. datetime writed to result file in format datetime(2018-08-09) it's incorrect.
-6. Implement skip_column QLineEdit as skip_table.
-7. If schema of some table differs we should add this table to skip_table list.
+6. If schema of some table differs we should add this table to skip_table list.
 
 Epics:
 0. Support dataframe comparing.

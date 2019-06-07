@@ -33,12 +33,13 @@ else:
 class MainUI(QWidget):
     def __init__(self, status_bar):
         super().__init__()
-        self.tables = list()
+        self.tables = dict()
         self.dbs = list()
         self.prod_db_list = list()
         self.test_db_list = list()
-        self.prod_tables = list()
-        self.test_tables = list()
+        self.prod_tables = dict()
+        self.test_tables = dict()
+        self.columns = list()
         self.prod_connect = False
         self.test_connect = False
         self.logger = Logger('DEBUG')
@@ -96,7 +97,8 @@ class MainUI(QWidget):
         self.le_excluded_tables.clicked.connect(self.set_excluded_tables)
         self.le_only_tables = ClickableLineEdit(self)
         self.le_only_tables.clicked.connect(self.set_included_tables)
-        self.le_skip_columns = QLineEdit(self)
+        self.le_skip_columns = ClickableLineEdit(self)
+        self.le_skip_columns.clicked.connect(self.set_excluded_columns)
 
         # Checkboxes
 
@@ -269,8 +271,27 @@ class MainUI(QWidget):
 
     def calculate_table_list(self):
         if all([self.prod_connect, self.test_connect]):
-            self.tables = list(set(self.prod_tables) & set(self.test_tables))
-            self.tables.sort()
+            tables = list(set(self.prod_tables.keys()) & set(self.test_tables.keys()))
+            tables.sort()
+            for table in tables:
+                if self.prod_tables.get(table) == self.test_tables.get(table):
+                    self.tables.update({table: self.prod_tables.get(table)})
+                else:
+                    self.logger.error(f'There is different columns for table {table}.')
+                    self.logger.info(f'Prod columns: {self.prod_tables.get(table)}')
+                    self.logger.info(f'Test columns: {self.test_tables.get(table)}')
+            self.calculate_excluded_columns()
+
+    def calculate_excluded_columns(self):
+        excluded_tables = self.le_excluded_tables.text().split(',')
+        self.columns = list()
+        for table in self.tables:
+            if table not in excluded_tables:
+                columns = self.tables.get(table)
+                for column in columns:
+                    if column not in self.columns:
+                        self.columns.append(column)
+        self.columns.sort()
 
     def set_default_values(self):
         self.le_excluded_tables.setText('databasechangelog,download,migrationhistory,mntapplog,reportinfo,' +
@@ -326,6 +347,7 @@ class MainUI(QWidget):
             skip_tables_view.exec_()
             self.le_excluded_tables.setText(','.join(skip_tables_view.selected_items))
             self.le_excluded_tables.setToolTip(self.le_excluded_tables.text().replace(',', ',\n'))
+            self.calculate_excluded_columns()
 
     def set_included_tables(self):
         if all([self.prod_connect, self.test_connect]):
@@ -334,6 +356,13 @@ class MainUI(QWidget):
             only_tables_view.exec_()
             self.le_only_tables.setText(','.join(only_tables_view.selected_items))
             self.le_only_tables.setToolTip(self.le_only_tables.text().replace(',', ',\n'))
+
+    def set_excluded_columns(self):
+        columns_to_skip = self.le_skip_columns.text().split(',')
+        skip_columns = ClickableItemsView(self.columns, columns_to_skip)
+        skip_columns.exec_()
+        self.le_skip_columns.setText(','.join(skip_columns.selected_items))
+        self.le_skip_columns.setToolTip(self.le_skip_columns.text().replace(',', ',\n'))
 
     @staticmethod
     def set_value(widget, value):
@@ -572,9 +601,9 @@ class MainUI(QWidget):
         file_name, _ = QFileDialog.getSaveFileName(PyQt5.QtWidgets.QFileDialog(), "QFileDialog.getSaveFileName()",  "",
                                                    "All Files (*);;Text Files (*.txt)")
         if file_name:
-            self.logger(f'Configuration successfully saved to {file_name}')
             with open(file_name, 'w') as file:
                 file.write('\n'.join(text))
+            print(f'Configuration successfully saved to {file_name}')  # TODO: fix this
 
     @staticmethod
     def exit():
@@ -643,7 +672,7 @@ class MainUI(QWidget):
             'password': self.le_prod_password.text(),
             'db': self.le_prod_db.text()
         }
-        self.prod_tables = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger).get_tables()
+        self.prod_tables = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger).get_tables_columns()
         if self.prod_tables is not None:
             self.logger.info(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} established successfully!")
             self.change_bar_message('prod', True)
@@ -663,7 +692,7 @@ class MainUI(QWidget):
             'password': self.le_test_password.text(),
             'db': self.le_test_db.text()
         }
-        self.test_tables = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger).get_tables()
+        self.test_tables = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger).get_tables_columns()
         if self.test_tables is not None:
             self.logger.info(f"Connection to db {test_dict.get('host')}/"
                              f"{test_dict.get('db')} established successfully!")

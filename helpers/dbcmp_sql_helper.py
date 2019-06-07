@@ -111,6 +111,35 @@ class DbAlchemyHelper:
         else:
             return None
 
+    def get_tables_columns(self):
+        if self.connection is not None and not self.db_not_found:
+            query = (f"SELECT table_name, column_name FROM information_schema.columns "
+                     f"WHERE table_schema LIKE '{self.db}';")
+            result = dict()
+            for item in self.connection.execute(query):
+                table = item[0]
+                column = item[1]
+                if table not in result:
+                    result.update({table: [column]})
+                else:
+                    new_value = result.get(table)
+                    new_value.append(column)
+                    result.update({table: new_value})
+            return result
+
+    def get_columns(self):
+        if self.connection is not None and not self.db_not_found:
+            show_columns = (f"SELECT DISTINCT(column_name) FROM information_schema.columns "
+                           f"WHERE table_schema LIKE '{self.db}';")
+            result = list()
+            for item in self.connection.execute(show_columns):
+                result.append(item[0])
+            result.sort()
+            return result
+        else:
+            return None
+
+
     def get_column_list(self, table):
         if self.connection is not None:
             query = (f"SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '{table}' "
