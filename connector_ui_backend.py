@@ -53,8 +53,6 @@ class Backend:
         subject = "[Test] Check databases"
         text = generate_mail_text(comparing_info, self.sql_comparing_properties,
                                   data_comparing_time, schema_comparing_time)
-        sendmail(text, 'pavelkiselev@inventale.com', 'pavel.kiselev@best4ad.com', 'RelOtUYm713', subject, None,
-                 self.logger)
 
 
 def check_service_dir(service_dir):
