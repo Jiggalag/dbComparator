@@ -1,4 +1,6 @@
-import process_dates, query_list_iterator, queryConstructor
+import process_dates
+import query_constructor
+import query_list_iterator
 from helpers import converters, dbcmp_sql_helper
 
 
@@ -23,16 +25,16 @@ class Comparation:
                 local_break, max_amount = self.check_amount(dates)
                 self.logger.info(f'Will be checked dates {dates}')
                 alchemy_object = dbcmp_sql_helper.DbAlchemyHelper(self.prod_sql, self.logger, **self.cmp_params)
-                query_list = queryConstructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
-                                                              self.logger).report(dates, self.mode, max_amount)
+                query_list = query_constructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
+                                                               self.logger).report(dates, self.mode, max_amount)
             else:
                 self.logger.warn('There is not any common dates for comparing')
                 query_list = []
         else:
             local_break, max_amount = self.check_amount(None)
             alchemy_object = dbcmp_sql_helper.DbAlchemyHelper(self.prod_sql, self.logger, **self.cmp_params)
-            query_list = queryConstructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
-                                                          self.logger).entity(max_amount)
+            query_list = query_constructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
+                                                           self.logger).entity(max_amount)
         if query_list:
             query_iterator = query_list_iterator.Iterator(self.prod_engine, self.test_engine,
                                                           self.table, self.logger, self.cmp_params)

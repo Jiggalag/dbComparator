@@ -8,7 +8,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from os.path import basename
 
-import tableData, sqlComparing, queryConstructor
+import query_constructor
+import sql_comparing
+import table_data
 from helpers import converters, dbcmp_sql_helper
 
 
@@ -32,15 +34,15 @@ class Backend:
                                                                self.logger)
         test_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(self.sql_connection_properties.get('test'),
                                                                self.logger)
-        comparing_info = tableData.Info(self.logger)
+        comparing_info = table_data.Info(self.logger)
         comparing_info.update_table_list("prod", prod_sql_connection.get_tables())
         comparing_info.update_table_list("test", test_sql_connection.get_tables())
 
         start_time = datetime.datetime.now()
         self.logger.info("Start processing!")
-        mapping = queryConstructor.prepare_column_mapping(prod_sql_connection, self.logger)
-        comparing_object = sqlComparing.Object(self.sql_connection_properties, self.sql_comparing_properties,
-                                               comparing_info)
+        mapping = query_constructor.prepare_column_mapping(prod_sql_connection, self.logger)
+        comparing_object = sql_comparing.Object(self.sql_connection_properties, self.sql_comparing_properties,
+                                                comparing_info)
         tables = comparing_object.calculate_table_list(prod_sql_connection)
         if self.sql_comparing_properties.get('check_schema'):
             schema_comparing_time = comparing_object.compare_metadata(start_time, tables)

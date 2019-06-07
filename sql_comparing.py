@@ -2,8 +2,8 @@ import datetime
 
 from sqlalchemy import create_engine
 
-from unified_comparing_class import Comparation
 from helpers import df_compare_helper, dbcmp_sql_helper
+from unified_comparing_class import Comparation
 
 
 class Object:

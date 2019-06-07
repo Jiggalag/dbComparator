@@ -12,11 +12,11 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QLabel, QGridLayout, QWidget, QLineEdit, QCheckBox, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QFileDialog, QRadioButton, QAction, qApp, QMainWindow
 
-from advanced_settings import AdvancedSettingsItem
-from clickable_items_view import ClickableItemsView
-from clickable_lineedit import ClickableLineEdit
-from comparatorWithUI import Backend
-from radiobutton_items_view import RadiobuttonItemsView
+from connector_ui_backend import Backend
+from custom_ui_elements.advanced_settings import AdvancedSettingsItem
+from custom_ui_elements.clickable_items_view import ClickableItemsView
+from custom_ui_elements.clickable_lineedit import ClickableLineEdit
+from custom_ui_elements.radiobutton_items_view import RadiobuttonItemsView
 from helpers import dbcmp_sql_helper
 from helpers.logging_helper import Logger
 
