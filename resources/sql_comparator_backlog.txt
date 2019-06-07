@@ -10,6 +10,8 @@ comparing progress.
 ? 4. Status bar should updates in background, application should ping servers by some timeout
 5. Bug. datetime writed to result file in format datetime(2018-08-09) it's incorrect.
 6. If schema of some table differs we should add this table to skip_table list.
+7. Fix sendmail.
+8. Add special search lineedits to modal windows like "skip_tables".
 
 Epics:
 0. Support dataframe comparing.

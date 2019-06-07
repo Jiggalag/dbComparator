@@ -22,7 +22,7 @@ class DbAlchemyHelper:
                 self.db_not_found = True
             else:
                 self.connection.execute(f'USE {self.db};')
-
+                self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.db}')
         self.logger = logger
         self.hide_columns = [
             'archived',
