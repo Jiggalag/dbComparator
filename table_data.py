@@ -36,6 +36,7 @@ class Info:
         else:
             self.logger.error(f"There is no such stage {stage}")
 
+    # TODO: check this useless method
     def update_diff_schema(self, value):
         self.diff_schema.append(value)
 

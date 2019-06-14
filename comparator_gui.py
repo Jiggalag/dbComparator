@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 import os
 import platform
+import shutil
 import sys
 
 import PyQt5
@@ -12,10 +12,13 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QLabel, QGridLayout, QWidget, QLineEdit, QCheckBox, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QFileDialog, QRadioButton, QAction, qApp, QMainWindow
 
-from connector_ui_backend import Backend
+import query_constructor
+import sql_comparing
+import table_data
 from custom_ui_elements.advanced_settings import AdvancedSettingsItem
 from custom_ui_elements.clickable_items_view import ClickableItemsView
 from custom_ui_elements.clickable_lineedit import ClickableLineEdit
+from custom_ui_elements.progress_window import ProgressWindow
 from custom_ui_elements.radiobutton_items_view import RadiobuttonItemsView
 from helpers import dbcmp_sql_helper
 from helpers.logging_helper import Logger
@@ -44,6 +47,13 @@ class MainUI(QWidget):
         self.test_connect = False
         self.logger = Logger('DEBUG')
         self._toggle = True
+        self.OS = operating_system
+        if self.OS == "Windows":
+            self.service_dir = "C:\\comparator"
+            self.test_dir = "C:\\dbComparator\\"
+        else:
+            self.service_dir = "/tmp/comparator/"
+            self.test_dir = os.getcwd() + "/test_results/"
 
         self.statusBar = status_bar
         grid = QGridLayout()
@@ -843,14 +853,31 @@ class MainUI(QWidget):
         }
         return properties_dict
 
+    @staticmethod
+    def check_service_dir(service_dir):
+        if os.path.exists(service_dir):
+            shutil.rmtree(service_dir)
+        os.mkdir(service_dir)
+
     @pyqtSlot()
     def start_work(self):
         connection_dict = self.get_sql_params()
         properties = self.get_properties()
         if connection_dict and properties:
             if all([self.prod_connect, self.test_connect]):
+                self.check_service_dir(self.service_dir)
+                self.check_service_dir(self.test_dir)
+                comparing_info = table_data.Info(self.logger)
+                comparing_info.update_table_list("prod", self.prod_sql_connection.get_tables())
+                comparing_info.update_table_list("test", self.test_sql_connection.get_tables())
+                mapping = query_constructor.prepare_column_mapping(self.prod_sql_connection, self.logger)
+                comparing_object = sql_comparing.Object(self.prod_sql_connection, self.test_sql_connection, properties,
+                                                        comparing_info)
+                self.tables = comparing_object.calculate_table_list(self.prod_sql_connection)
                 Logger(self.logging_level).info('Comparing started!')
-                Backend(self.prod_sql_connection, self.test_sql_connection, connection_dict, properties).run_comparing()
+                check_schema = self.get_checkbox_state(self.cb_enable_schema_checking)
+                progress = ProgressWindow(comparing_object, self.tables, check_schema)
+                progress.exec()
 
 
 class MainWindow(QMainWindow):

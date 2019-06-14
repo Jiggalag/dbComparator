@@ -5,11 +5,9 @@ from unified_comparing_class import Comparation
 
 
 class Object:
-    def __init__(self, prod_connect, test_connect, sql_connection_properties, sql_comparing_properties, comparing_info):
+    def __init__(self, prod_connect, test_connect, sql_comparing_properties, comparing_info):
         self.prod_sql_connection = prod_connect
         self.test_sql_connection = test_connect
-        self.prod_sql = sql_connection_properties.get('prod')
-        self.test_sql = sql_connection_properties.get('test')
         self.comparing_info = comparing_info
         self.attempts = 5
         self.comparing_step = 10000
@@ -126,32 +124,30 @@ class Object:
             'table_timeout': self.table_timeout
         }
 
-    def compare_data(self, start_time, service_dir, mapping, tables):
-        for table in tables:
-            start_table_check_time = datetime.datetime.now()
-            self.logger.info(f"Table {table} processing started now...")
-            is_report = dbcmp_sql_helper.is_report(table, self.prod_sql_connection)
-
-            # TODO: refactor this place! Rename onlyReports/Entities
-
-            if 'onlyReports' in self.separate_checking and not is_report:
-                continue
-            if 'onlyEntities' in self.separate_checking and is_report:
-                continue
-            self.sql_comparing_properties.update({'service_dir': service_dir})
-            compared_table = Comparation(self.prod_sql_connection, self.test_sql_connection, table, self.logger,
-                                         self.sql_comparing_properties)
-            global_break = compared_table.compare_table(is_report, mapping, start_time, self.comparing_info,
-                                                        self.comparing_step)
-            self.logger.info(f"Table {table} checked in {datetime.datetime.now() - start_table_check_time}...")
-            if global_break:
-                data_comparing_time = datetime.datetime.now() - start_time
-                self.logger.warn(f'Global breaking is True. Comparing interrupted. Comparing finished in '
-                                 f'{data_comparing_time}')
-                return data_comparing_time
+    def compare_data(self, service_dir, mapping, table):
+        start_time = datetime.datetime.now()
+        start_table_check_time = datetime.datetime.now()
+        self.logger.info(f"Table {table} processing started now...")
+        is_report = dbcmp_sql_helper.is_report(table, self.prod_sql_connection)
+        # TODO: refactor this place! Rename onlyReports/Entities
+        if 'onlyReports' in self.separate_checking and not is_report:
+            return False
+        if 'onlyEntities' in self.separate_checking and is_report:
+            return False
+        self.sql_comparing_properties.update({'service_dir': service_dir})
+        compared_table = Comparation(self.prod_sql_connection, self.test_sql_connection, table, self.logger,
+                                     self.sql_comparing_properties)
+        global_break = compared_table.compare_table(is_report, mapping, start_time, self.comparing_info,
+                                                    self.comparing_step)
+        self.logger.info(f"Table {table} checked in {datetime.datetime.now() - start_table_check_time}...")
+        if global_break:
+            data_comparing_time = datetime.datetime.now() - start_time
+            self.logger.warn(f'Global breaking is True. Comparing interrupted. Comparing finished in '
+                             f'{data_comparing_time}')
+            return data_comparing_time
         data_comparing_time = datetime.datetime.now() - start_time
         self.logger.info(f'Comparing finished in {data_comparing_time}')
-        return data_comparing_time
+        return True
 
     def calculate_table_list(self, connection):
         if len(self.only_tables) == 1 and self.only_tables[0] == '':
@@ -160,25 +156,23 @@ class Object:
         else:
             return self.only_tables
 
-    def compare_metadata(self, start_time, tables):
-        for table in tables:
-            self.logger.info(f"Check schema for table {table}...")
-            schema_columns = ', '.join(self.schema_columns)
-            query = (f"SELECT {schema_columns} FROM INFORMATION_SCHEMA.COLUMNS " +
-                     f"WHERE TABLE_SCHEMA = 'DBNAME' AND TABLE_NAME='TABLENAME' ".replace("TABLENAME", table) +
-                     f"ORDER BY COLUMN_NAME")
-
-            prod_columns, test_columns = dbcmp_sql_helper.get_comparable_objects([self.prod_sql_connection.engine,
-                                                                                  self.test_sql_connection.engine],
-                                                                                 query)
-            if (prod_columns is None) or (test_columns is None):
-                self.logger.warn(f'Table {table} skipped because something going bad')
-                continue
-            diff_df = df_compare_helper.get_dataframes_diff(prod_columns, test_columns)
-            if not diff_df.empty:
-                self.logger.error(f"Schema of tables {table} differs!")
-                # TODO: adding serializing to html file on disc
-                # TODO: exclude table with problem schema from comparing
+    def compare_table_metadata(self, start_time, table):
+        self.logger.info(f"Check schema for table {table}...")
+        schema_columns = ', '.join(self.schema_columns)
+        query = (f"SELECT {schema_columns} FROM INFORMATION_SCHEMA.COLUMNS " +
+                 f"WHERE TABLE_SCHEMA = 'DBNAME' AND TABLE_NAME='TABLENAME' ".replace("TABLENAME", table) +
+                 f"ORDER BY COLUMN_NAME")
+        prod_columns, test_columns = dbcmp_sql_helper.get_comparable_objects([self.prod_sql_connection.engine,
+                                                                              self.test_sql_connection.engine],
+                                                                             query)
+        if (prod_columns is None) or (test_columns is None):
+            self.logger.warn(f'Table {table} skipped because something going bad')
+            return False
+        diff_df = df_compare_helper.get_dataframes_diff(prod_columns, test_columns)
+        if not diff_df.empty:
+            self.logger.error(f"Schema of tables {table} differs!")
+            # TODO: adding serializing to html file on disc
+            # TODO: exclude table with problem schema from comparing
         schema_comparing_time = datetime.datetime.now() - start_time
         self.logger.info(f"Schema compared in {schema_comparing_time}")
-        return schema_comparing_time
+        return True

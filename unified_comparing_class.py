@@ -33,7 +33,7 @@ class Comparation:
                 query_list = []
         else:
             local_break, max_amount = self.check_amount(None)
-            alchemy_object = self.prod_sql_connection.set_keyvalue(**self.cmp_params)
+            alchemy_object = self.prod_sql_connection.set_keyvalue(**self.cmp_params) # TODO: AttributeError: 'DbAlchemyHelper' object has no attribute 'set_keyvalue'
             query_list = query_constructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
                                                            self.logger).entity(max_amount)
         if query_list:
