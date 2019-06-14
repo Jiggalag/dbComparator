@@ -130,19 +130,6 @@ class DbAlchemyHelper:
                     result.update({table: new_value})
             return result
 
-    def get_columns(self):
-        if self.connection is not None and not self.db_not_found:
-            show_columns = (f"SELECT DISTINCT(column_name) FROM information_schema.columns "
-                           f"WHERE table_schema LIKE '{self.db}';")
-            result = list()
-            for item in self.connection.execute(show_columns):
-                result.append(item[0])
-            result.sort()
-            return result
-        else:
-            return None
-
-
     def get_column_list(self, table):
         if self.connection is not None:
             query = (f"SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '{table}' "
@@ -182,42 +169,11 @@ def get_raw_objects(connection_list, query):
         return result[0], result[1]
 
 
-def prepare_column_mapping(sql_connection, logger):
-    column_dict = {}
-    query_get_column = (f"SELECT column_name, referenced_table_name FROM "
-                        f"INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE constraint_name NOT LIKE "
-                        f"'PRIMARY' AND referenced_table_name "
-                        f"IS NOT NULL AND table_schema = '{sql_connection.db}';")
-    logger.debug(query_get_column)
-    raw_column_list = sql_connection.select(query_get_column)
-    for item in raw_column_list:
-        column_dict.update({"f`{item.lower()}`": f"`{item.lower()}`"})
-    return column_dict
-
-
 # returns list for easy convertation to set
 # TODO: remove this interlayer
 def get_comparable_objects(connection_list, query):
     result = get_raw_objects(connection_list, query)
     return result[0], result[1]
-
-
-def get_dates(connection_list, query):
-    result = list(get_raw_objects(connection_list, query))
-    dates = []
-    for bulk in result:
-        server_dates = []
-        for item in bulk:
-            server_dates.append(next(iter(item.values())))
-        dates.append(server_dates)
-    return dates[0], dates[1]
-
-
-def collapse_item(target_list):
-    if len(target_list) == 1:
-        return list(target_list[0].values())
-    else:
-        return target_list
 
 
 def get_column_list_for_sum(set_column_list):

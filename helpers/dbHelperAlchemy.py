@@ -1,8 +1,10 @@
 from multiprocessing.dummy import Pool
-from sqlalchemy import create_engine
+
 import pandas as pd
+from sqlalchemy import create_engine
 
 
+# TODO: probably I should get rid of this class and move useful functions to dbcmp_sql_helper
 class DbAlchemyConnector:
     def __init__(self, connect_parameters, logger, attempts=5, timeout=10):
         self.host = connect_parameters.get('host')
