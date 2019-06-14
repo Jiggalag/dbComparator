@@ -61,6 +61,22 @@ class DbAlchemyHelper:
             "COLUMN_COMMENT",
             "GENERATION_EXPRESSION"
         ]
+        self.set_keyvalues(**kwargs)
+
+    def select(self, query):
+        if self.connection is not None:
+            error_count = 0
+            while error_count < self.attempts:
+                sql_query = query.replace('DBNAME', self.db)
+                self.logger.debug(sql_query)
+                result = list()
+                for item in self.engine.execute(sql_query):
+                    result.append(item)
+                return result
+        else:
+            return None
+
+    def set_keyvalues(self, **kwargs):
         for key in list(kwargs.keys()):
             if 'hideColumns' in key:
                 self.hide_columns = kwargs.get(key)
@@ -86,19 +102,6 @@ class DbAlchemyHelper:
                 self.separate_checking = kwargs.get(key)
             if 'read_timeout' in key:
                 self.read_timeout = int(kwargs.get(key))
-
-    def select(self, query):
-        if self.connection is not None:
-            error_count = 0
-            while error_count < self.attempts:
-                sql_query = query.replace('DBNAME', self.db)
-                self.logger.debug(sql_query)
-                result = list()
-                for item in self.engine.execute(sql_query):
-                    result.append(item)
-                return result
-        else:
-            return None
 
     def get_tables(self):
         if self.connection is not None and not self.db_not_found:

@@ -11,47 +11,47 @@ from os.path import basename
 import query_constructor
 import sql_comparing
 import table_data
-from helpers import converters, dbcmp_sql_helper
+from helpers import converters
 
 
 class Backend:
-    def __init__(self, sql_connection_properties, sql_comparing_properties):
+    def __init__(self, prod_connect, test_connect, sql_connection_properties, sql_comparing_properties):
+        self.prod_sql_connection = prod_connect
+        self.test_sql_connection = test_connect
         self.sql_connection_properties = sql_connection_properties
-        self.sql_comparing_properties = sql_comparing_properties
+        self.sql_comparing_properties = sql_comparing_properties  # TODO: refactor - move dict to object
         self.logger = sql_comparing_properties.get('logger')
         self.OS = sql_comparing_properties.get('os')
+        if self.OS == "Windows":
+            self.service_dir = "C:\\comparator"
+            self.test_dir = "C:\\dbComparator\\"
+        else:
+            self.service_dir = "/tmp/comparator/"
+            self.test_dir = os.getcwd() + "/test_results/"
+        check_service_dir(self.service_dir)
+        check_service_dir(self.test_dir)
+        self.comparing_info = table_data.Info(self.logger)
+        self.comparing_info.update_table_list("prod", self.prod_sql_connection.get_tables())
+        self.comparing_info.update_table_list("test", self.test_sql_connection.get_tables())
+
+        self.start_time = datetime.datetime.now()
+        self.logger.info("Start processing!")
+        self.mapping = query_constructor.prepare_column_mapping(self.prod_sql_connection, self.logger)
+        self.comparing_object = sql_comparing.Object(self.prod_sql_connection, self.test_sql_connection,
+                                                     self.sql_connection_properties, self.sql_comparing_properties,
+                                                     self.comparing_info)
+        self.tables = self.comparing_object.calculate_table_list(self.prod_sql_connection)
 
     def run_comparing(self):
-        if self.OS == "Windows":
-            service_dir = "C:\\comparator"
-            test_dir = "C:\\dbComparator\\"
-        else:
-            service_dir = "/tmp/comparator/"
-            test_dir = os.getcwd() + "/test_results/"
-        check_service_dir(service_dir)
-        check_service_dir(test_dir)
-        prod_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(self.sql_connection_properties.get('prod'),
-                                                               self.logger)
-        test_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(self.sql_connection_properties.get('test'),
-                                                               self.logger)
-        comparing_info = table_data.Info(self.logger)
-        comparing_info.update_table_list("prod", prod_sql_connection.get_tables())
-        comparing_info.update_table_list("test", test_sql_connection.get_tables())
-
-        start_time = datetime.datetime.now()
-        self.logger.info("Start processing!")
-        mapping = query_constructor.prepare_column_mapping(prod_sql_connection, self.logger)
-        comparing_object = sql_comparing.Object(self.sql_connection_properties, self.sql_comparing_properties,
-                                                comparing_info)
-        tables = comparing_object.calculate_table_list(prod_sql_connection)
         if self.sql_comparing_properties.get('check_schema'):
-            schema_comparing_time = comparing_object.compare_metadata(start_time, tables)
+            schema_comparing_time = self.comparing_object.compare_metadata(self.start_time, self.tables)
         else:
             self.logger.info("Schema checking disabled...")
             schema_comparing_time = None
-        data_comparing_time = comparing_object.compare_data(start_time, service_dir, mapping, tables)
+        data_comparing_time = self.comparing_object.compare_data(self.start_time, self.service_dir, self.mapping,
+                                                                 self.tables)
         subject = "[Test] Check databases"
-        text = generate_mail_text(comparing_info, self.sql_comparing_properties,
+        text = generate_mail_text(self.comparing_info, self.sql_comparing_properties,
                                   data_comparing_time, schema_comparing_time)
 
 

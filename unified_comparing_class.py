@@ -5,10 +5,11 @@ from helpers import converters, dbcmp_sql_helper
 
 
 class Comparation:
-    def __init__(self, prod_engine, test_engine, table, logger, cmp_params, prod_sql):
-        self.prod_engine = prod_engine
-        self.test_engine = test_engine
-        self.prod_sql = prod_sql
+    def __init__(self, prod_connect, test_connect, table, logger, cmp_params):
+        self.prod_sql_connection = prod_connect
+        self.test_sql_connection = test_connect
+        self.prod_engine = prod_connect.engine
+        self.test_engine = test_connect.engine
         self.table = table
         self.cmp_params = cmp_params
         self.depth_report_check = self.cmp_params.get('depth_report_check')
@@ -24,7 +25,7 @@ class Comparation:
             if dates:
                 local_break, max_amount = self.check_amount(dates)
                 self.logger.info(f'Will be checked dates {dates}')
-                alchemy_object = dbcmp_sql_helper.DbAlchemyHelper(self.prod_sql, self.logger, **self.cmp_params)
+                alchemy_object = self.prod_sql_connection.set_keyvalue(**self.cmp_params)
                 query_list = query_constructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
                                                                self.logger).report(dates, self.mode, max_amount)
             else:
@@ -32,7 +33,7 @@ class Comparation:
                 query_list = []
         else:
             local_break, max_amount = self.check_amount(None)
-            alchemy_object = dbcmp_sql_helper.DbAlchemyHelper(self.prod_sql, self.logger, **self.cmp_params)
+            alchemy_object = self.prod_sql_connection.set_keyvalue(**self.cmp_params)
             query_list = query_constructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
                                                            self.logger).entity(max_amount)
         if query_list:

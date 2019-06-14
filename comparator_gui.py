@@ -672,7 +672,8 @@ class MainUI(QWidget):
             'password': self.le_prod_password.text(),
             'db': self.le_prod_db.text()
         }
-        self.prod_tables = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger).get_tables_columns()
+        self.prod_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger)
+        self.prod_tables = self.prod_sql_connection.get_tables_columns()
         if self.prod_tables is not None:
             self.logger.info(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} established successfully!")
             self.change_bar_message('prod', True)
@@ -692,7 +693,8 @@ class MainUI(QWidget):
             'password': self.le_test_password.text(),
             'db': self.le_test_db.text()
         }
-        self.test_tables = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger).get_tables_columns()
+        self.test_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger)
+        self.test_tables = self.test_sql_connection.get_tables_columns()
         if self.test_tables is not None:
             self.logger.info(f"Connection to db {test_dict.get('host')}/"
                              f"{test_dict.get('db')} established successfully!")
@@ -848,7 +850,7 @@ class MainUI(QWidget):
         if connection_dict and properties:
             if all([self.prod_connect, self.test_connect]):
                 Logger(self.logging_level).info('Comparing started!')
-                Backend(connection_dict, properties).run_comparing()
+                Backend(self.prod_sql_connection, self.test_sql_connection, connection_dict, properties).run_comparing()
 
 
 class MainWindow(QMainWindow):
