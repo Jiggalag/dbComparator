@@ -13,7 +13,6 @@ comparing progress.
 7. Fix sendmail.
 8. Add special search lineedits to modal windows like "skip_tables".
 9. Only first error flag not works.
-10. Exclude report tables from list in case when report flag not checked (same with entities flag).
 
 Epics:
 0. Support dataframe comparing.

@@ -37,6 +37,7 @@ class MainUI(QWidget):
     def __init__(self, status_bar):
         super().__init__()
         self.tables = dict()
+        self.tables_for_ui = dict()
         self.dbs = list()
         self.prod_db_list = list()
         self.test_db_list = list()
@@ -219,6 +220,26 @@ class MainUI(QWidget):
         self.setWindowIcon(QIcon('./resources/slowpoke.png'))
         self.show()
 
+    def get_only_reports(self):
+        result = dict()
+        for table in self.tables:
+            if self.tables.get(table).get('is_report'):
+                columns = self.tables.get(table).get('columns')
+                result.update({table: columns})
+            else:
+                continue
+        return result
+
+    def get_only_entities(self):
+        result = dict()
+        for table in self.tables:
+            if not self.tables.get(table).get('is_report'):
+                columns = self.tables.get(table).get('columns')
+                result.update({table: columns})
+            else:
+                continue
+        return result
+
     @pyqtSlot()
     def toggle(self):
         if all([self.cb_entities.isChecked(), self.cb_reports.isChecked()]):
@@ -227,16 +248,19 @@ class MainUI(QWidget):
             self.day_summary_mode.setEnabled(True)
             self.section_summary_mode.setEnabled(True)
             self.detailed_mode.setEnabled(True)
+            self.tables_for_ui = self.tables.copy()
         elif self.cb_entities.isChecked():
             self.cb_entities.setEnabled(False)
             self.day_summary_mode.setEnabled(False)
             self.section_summary_mode.setEnabled(False)
             self.detailed_mode.setEnabled(False)
+            self.tables_for_ui = self.get_only_entities()
         elif self.cb_reports.isChecked():
             self.cb_reports.setEnabled(False)
             self.day_summary_mode.setEnabled(True)
             self.section_summary_mode.setEnabled(True)
             self.detailed_mode.setEnabled(True)
+            self.tables_for_ui = self.get_only_reports()
 
     def clear_all(self):
         self.le_prod_host.clear()
@@ -281,24 +305,23 @@ class MainUI(QWidget):
 
     def calculate_table_list(self):
         if all([self.prod_connect, self.test_connect]):
-            reports = list(set(self.prod_tables.get('reports').keys()) & set(self.test_tables.keys()))
             tables = list(set(self.prod_tables.keys()) & set(self.test_tables.keys()))
             tables.sort()
             for table in tables:
-                if self.prod_tables.get(table) == self.test_tables.get(table):
+                if self.prod_tables.get(table).get('columns') == self.test_tables.get(table).get('columns'):
                     self.tables.update({table: self.prod_tables.get(table)})
                 else:
-                    self.logger.error(f'There is different columns for table {table}.')
-                    self.logger.info(f'Prod columns: {self.prod_tables.get(table)}')
-                    self.logger.info(f'Test columns: {self.test_tables.get(table)}')
+                    self.logger.error(f"There is different columns for table {table}.")
+                    self.logger.info(f"Prod columns: {self.prod_tables.get(table).get('columns')}")
+                    self.logger.info(f"Test columns: {self.test_tables.get(table).get('columns')}")
             self.calculate_excluded_columns()
 
     def calculate_excluded_columns(self):
         excluded_tables = self.le_excluded_tables.text().split(',')
         self.columns = list()
-        for table in self.tables:
+        for table in self.tables_for_ui:
             if table not in excluded_tables:
-                columns = self.tables.get(table)
+                columns = self.tables_for_ui.get(table)
                 for column in columns:
                     if column not in self.columns:
                         self.columns.append(column)
@@ -354,7 +377,7 @@ class MainUI(QWidget):
     def set_excluded_tables(self):
         if all([self.prod_connect, self.test_connect]):
             tables_to_skip = self.le_excluded_tables.text().split(',')
-            skip_tables_view = ClickableItemsView(self.tables, tables_to_skip)
+            skip_tables_view = ClickableItemsView(self.tables_for_ui, tables_to_skip)
             skip_tables_view.exec_()
             self.le_excluded_tables.setText(','.join(skip_tables_view.selected_items))
             self.le_excluded_tables.setToolTip(self.le_excluded_tables.text().replace(',', ',\n'))
@@ -363,7 +386,7 @@ class MainUI(QWidget):
     def set_included_tables(self):
         if all([self.prod_connect, self.test_connect]):
             tables_to_include = self.le_only_tables.text().split(',')
-            only_tables_view = ClickableItemsView(self.tables, tables_to_include)
+            only_tables_view = ClickableItemsView(self.tables_for_ui, tables_to_include)
             only_tables_view.exec_()
             self.le_only_tables.setText(','.join(only_tables_view.selected_items))
             self.le_only_tables.setToolTip(self.le_only_tables.text().replace(',', ',\n'))
@@ -875,6 +898,7 @@ class MainUI(QWidget):
                 comparing_object = sql_comparing.Object(self.prod_sql_connection, self.test_sql_connection, properties,
                                                         comparing_info)
                 self.tables = comparing_object.calculate_table_list(self.prod_sql_connection)
+                self.tables_for_ui = self.tables.copy()
                 Logger(self.logging_level).info('Comparing started!')
                 check_schema = self.get_checkbox_state(self.cb_enable_schema_checking)
                 progress = ProgressWindow(comparing_object, self.tables, check_schema)
