@@ -128,7 +128,18 @@ class DbAlchemyHelper:
                     new_value = result.get(table)
                     new_value.append(column)
                     result.update({table: new_value})
-            return result
+            final_result = dict({'reports': {}, 'entities': {}})
+            for table in result:
+                columns = result.get(table)
+                if all(['dt' in columns, 'impressions' in columns, 'clicks' in columns]):
+                    new_value = final_result.get('reports')
+                    new_value.update({table: columns})
+                    final_result.update({'reports': new_value})
+                else:
+                    new_value = final_result.get('entities')
+                    new_value.update({table: columns})
+                    final_result.update({'entities': new_value})
+            return final_result
 
     def get_column_list(self, table):
         if self.connection is not None:

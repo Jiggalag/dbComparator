@@ -281,6 +281,7 @@ class MainUI(QWidget):
 
     def calculate_table_list(self):
         if all([self.prod_connect, self.test_connect]):
+            reports = list(set(self.prod_tables.get('reports').keys()) & set(self.test_tables.keys()))
             tables = list(set(self.prod_tables.keys()) & set(self.test_tables.keys()))
             tables.sort()
             for table in tables:
