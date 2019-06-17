@@ -1,6 +1,6 @@
 import datetime
 
-from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel
+from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplication
 
 
 class ProgressWindow(QDialog):
@@ -25,7 +25,6 @@ class ProgressWindow(QDialog):
         if not self.check_schema:
             schema_checking.setVisible(False)
             self.progress_schema.setVisible(False)
-
         self.show()
         self.start()
 
@@ -35,15 +34,18 @@ class ProgressWindow(QDialog):
         if self.check_schema:
             self.setWindowTitle("Comparing metadata...")
             for table in self.tables:
-                self.completed = part * (self.tables.index(table) + 1)
+                self.completed = part * (list(self.tables.keys()).index(table) + 1)
                 self.progress_schema.setValue(self.completed)
-                self.comparing_object.compare_table_metadata(self.start_time, table)
+                self.comparing_object.compare_table_metadata(table)
+                QApplication.processEvents()
+                # TODO: add record to log with total time of schema checking
         else:
             self.logger.info("Schema checking disabled...")
         self.setWindowTitle("Comparing data...")
         schema_checking_time = datetime.datetime.now() - self.start_time
         for table in self.tables:
-            self.completed = part * (self.tables.index(table) + 1)
+            self.completed = part * (list(self.tables.keys()).index(table) + 1)
             self.progress_data.setValue(self.completed)
             self.comparing_object.compare_data(service_dir='service_dir', mapping='mapping', table=table)
         data_comparing_time = datetime.datetime.now() - schema_checking_time
+        # TODO: add record to log with total time of data checking

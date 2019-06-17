@@ -128,15 +128,10 @@ class Object:
         start_time = datetime.datetime.now()
         start_table_check_time = datetime.datetime.now()
         self.logger.info(f"Table {table} processing started now...")
-        is_report = dbcmp_sql_helper.is_report(table, self.prod_sql_connection)
-        # TODO: refactor this place! Rename onlyReports/Entities
-        if 'onlyReports' in self.separate_checking and not is_report:
-            return False
-        if 'onlyEntities' in self.separate_checking and is_report:
-            return False
         self.sql_comparing_properties.update({'service_dir': service_dir})
         compared_table = Comparation(self.prod_sql_connection, self.test_sql_connection, table, self.logger,
                                      self.sql_comparing_properties)
+        is_report = table.get('is_report')
         global_break = compared_table.compare_table(is_report, mapping, start_time, self.comparing_info,
                                                     self.comparing_step)
         self.logger.info(f"Table {table} checked in {datetime.datetime.now() - start_table_check_time}...")
@@ -156,7 +151,8 @@ class Object:
         else:
             return self.only_tables
 
-    def compare_table_metadata(self, start_time, table):
+    def compare_table_metadata(self, table):
+        start_time = datetime.datetime.now()
         self.logger.info(f"Check schema for table {table}...")
         schema_columns = ', '.join(self.schema_columns)
         query = (f"SELECT {schema_columns} FROM INFORMATION_SCHEMA.COLUMNS " +
@@ -174,5 +170,5 @@ class Object:
             # TODO: adding serializing to html file on disc
             # TODO: exclude table with problem schema from comparing
         schema_comparing_time = datetime.datetime.now() - start_time
-        self.logger.info(f"Schema compared in {schema_comparing_time}")
+        self.logger.debug(f"Schema of table {table} compared in {schema_comparing_time}")
         return True

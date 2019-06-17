@@ -4,15 +4,12 @@ Enchancements:
 2. Comparing step should be moved from UI. Instead of manually possibility of setting comparing step I should implement
 feature which automatically changes comparing step in case of slow or fast connection. Logic: if comparing speed lower
 than some hardcoded value, I should decrease comparing step.
-3. UI hangs and disables during comparing DBs. Add modal window with progress bar and some information about
-progress of comparing. Probably, we should generate all sql-queries before running and use this queries to calculate
-comparing progress.
-? 4. Status bar should updates in background, application should ping servers by some timeout
-5. Bug. datetime writed to result file in format datetime(2018-08-09) it's incorrect.
-6. If schema of some table differs we should add this table to skip_table list.
-7. Fix sendmail.
-8. Add special search lineedits to modal windows like "skip_tables".
-9. Only first error flag not works.
+? 3. Status bar should updates in background, application should ping servers by some timeout
+4. Bug. datetime writed to result file in format datetime(2018-08-09) it's incorrect.
+5. If schema of some table differs we should add this table to skip_table list.
+6. Fix sendmail.
+7. Add special search lineedits to modal windows like "skip_tables".
+8. Only first error flag not works.
 
 Epics:
 0. Support dataframe comparing.

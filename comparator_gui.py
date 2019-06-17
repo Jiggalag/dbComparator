@@ -314,6 +314,7 @@ class MainUI(QWidget):
                     self.logger.error(f"There is different columns for table {table}.")
                     self.logger.info(f"Prod columns: {self.prod_tables.get(table).get('columns')}")
                     self.logger.info(f"Test columns: {self.test_tables.get(table).get('columns')}")
+            self.tables_for_ui = self.tables.copy()
             self.calculate_excluded_columns()
 
     def calculate_excluded_columns(self):
@@ -897,8 +898,6 @@ class MainUI(QWidget):
                 mapping = query_constructor.prepare_column_mapping(self.prod_sql_connection, self.logger)
                 comparing_object = sql_comparing.Object(self.prod_sql_connection, self.test_sql_connection, properties,
                                                         comparing_info)
-                self.tables = comparing_object.calculate_table_list(self.prod_sql_connection)
-                self.tables_for_ui = self.tables.copy()
                 Logger(self.logging_level).info('Comparing started!')
                 check_schema = self.get_checkbox_state(self.cb_enable_schema_checking)
                 progress = ProgressWindow(comparing_object, self.tables, check_schema)
