@@ -143,13 +143,6 @@ class Object:
         self.logger.info(f'Comparing finished in {data_comparing_time}')
         return True
 
-    def calculate_table_list(self, connection):
-        if len(self.only_tables) == 1 and self.only_tables[0] == '':
-            return self.comparing_info.define_table_list(self.excluded_tables, self.client_ignored_tables,
-                                                         self.reports, self.entities, connection)
-        else:
-            return self.only_tables
-
     def compare_table_metadata(self, table):
         start_time = datetime.datetime.now()
         self.logger.info(f"Check schema for table {table}...")

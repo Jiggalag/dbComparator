@@ -191,15 +191,3 @@ def get_column_list_for_sum(set_column_list):
         else:
             column_list_with_sums.append(item)
     return column_list_with_sums
-
-
-def is_report(table, connection):
-    query = f"DESCRIBE {table};"
-    result = connection.select(query)
-    columns = list()
-    for column in result:
-        columns.append(column._row[0])
-    if all(['dt' in columns, 'impressions' in columns, 'clicks' in columns]):
-        return True
-    else:
-        return False
