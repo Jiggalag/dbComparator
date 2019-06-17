@@ -1,6 +1,6 @@
 Enchancements:
 
-1. Add try/except construction in case of defining non-existent columns/tables.
+1. Fix cutting of schema_label and data_label in progress window.
 2. Comparing step should be moved from UI. Instead of manually possibility of setting comparing step I should implement
 feature which automatically changes comparing step in case of slow or fast connection. Logic: if comparing speed lower
 than some hardcoded value, I should decrease comparing step.
