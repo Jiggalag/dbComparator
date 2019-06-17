@@ -124,14 +124,13 @@ class Object:
             'table_timeout': self.table_timeout
         }
 
-    def compare_data(self, service_dir, mapping, table):
+    def compare_data(self, service_dir, mapping, table, is_report):
         start_time = datetime.datetime.now()
         start_table_check_time = datetime.datetime.now()
         self.logger.info(f"Table {table} processing started now...")
         self.sql_comparing_properties.update({'service_dir': service_dir})
         compared_table = Comparation(self.prod_sql_connection, self.test_sql_connection, table, self.logger,
                                      self.sql_comparing_properties)
-        is_report = table.get('is_report')
         global_break = compared_table.compare_table(is_report, mapping, start_time, self.comparing_info,
                                                     self.comparing_step)
         self.logger.info(f"Table {table} checked in {datetime.datetime.now() - start_table_check_time}...")

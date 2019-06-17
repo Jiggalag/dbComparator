@@ -46,6 +46,7 @@ class ProgressWindow(QDialog):
         for table in self.tables:
             self.completed = part * (list(self.tables.keys()).index(table) + 1)
             self.progress_data.setValue(self.completed)
-            self.comparing_object.compare_data(service_dir='service_dir', mapping='mapping', table=table)
+            is_report = self.tables.get(table).get('is_report')
+            self.comparing_object.compare_data(service_dir='service_dir', mapping='mapping', table=table, is_report=is_report)
         data_comparing_time = datetime.datetime.now() - schema_checking_time
         # TODO: add record to log with total time of data checking
