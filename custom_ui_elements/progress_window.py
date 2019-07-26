@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplica
 
 
 class ProgressWindow(QDialog):
-    def __init__(self, comparing_object, tables, check_schema):
+    def __init__(self, comparing_object, tables, check_schema, mapping, service_dir):
         super(ProgressWindow, self).__init__()
         self.setGeometry(50, 50, 500, 300)
         grid = QGridLayout()
@@ -13,6 +13,8 @@ class ProgressWindow(QDialog):
         self.comparing_object = comparing_object
         self.tables = tables
         self.check_schema = check_schema
+        self.mapping = mapping
+        self.service_dir = service_dir
         self.progress_schema = QProgressBar(self)
         self.progress_data = QProgressBar(self)
         self.schema_label = QLabel()
@@ -47,6 +49,7 @@ class ProgressWindow(QDialog):
                 self.comparing_object.compare_table_metadata(table)
                 QApplication.processEvents()
                 # TODO: add record to log with total time of schema checking
+            self.schema_label.setText(f'Schemas successfully compared...')
         else:
             self.logger.info("Schema checking disabled...")
         self.setWindowTitle("Comparing data...")
@@ -56,7 +59,9 @@ class ProgressWindow(QDialog):
             self.progress_data.setValue(self.completed)
             self.data_label.setText(f'Processing of {table} table...')
             is_report = self.tables.get(table).get('is_report')
-            self.comparing_object.compare_data(service_dir='service_dir', mapping='mapping', table=table, is_report=is_report)
+            self.comparing_object.compare_data(service_dir=self.service_dir, mapping=self.mapping, table=table,
+                                               is_report=is_report)
             QApplication.processEvents()
+        self.data_label.setText(f'Data successfully compared...')
         data_comparing_time = datetime.datetime.now() - schema_checking_time
         # TODO: add record to log with total time of data checking

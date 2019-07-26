@@ -1,7 +1,7 @@
+from multiprocessing.dummy import Pool
+import pandas as pd
 import sqlalchemy
 from sqlalchemy import create_engine
-
-from helpers import dbHelperAlchemy
 
 
 class DbAlchemyHelper:
@@ -102,6 +102,7 @@ class DbAlchemyHelper:
                 self.separate_checking = kwargs.get(key)
             if 'read_timeout' in key:
                 self.read_timeout = int(kwargs.get(key))
+            return self
 
     def get_tables(self):
         if self.connection is not None and not self.db_not_found:
@@ -157,6 +158,15 @@ class DbAlchemyHelper:
         else:
             return None
 
+    @staticmethod
+    def parallel_select(connection_list, query):
+        pool = Pool(2)  # TODO: remove hardcode, change to dynamically defining amount of threads
+        result = pool.map((lambda x: pd.read_sql(query.replace('DBNAME', x.url.database), x)), connection_list)
+        # result = pool.map((lambda x: x.execute(query.replace('DBNAME', x.url.database))), connection_list)  # TODO: add try/catch
+        pool.close()
+        pool.join()
+        return result
+
 
 def get_amount_records(table, dates, sql_connection_list):
     if dates is None:
@@ -169,7 +179,7 @@ def get_amount_records(table, dates, sql_connection_list):
 
 # TODO: strongly refactor this code!
 def get_raw_objects(connection_list, query):
-    result = dbHelperAlchemy.DbAlchemyConnector.parallel_select(connection_list, query)
+    result = DbAlchemyHelper.parallel_select(connection_list, query)
     if (result[0] is None) or (result[1] is None):
         return None, None
     else:
