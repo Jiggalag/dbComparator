@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplica
 
 
 class ProgressWindow(QDialog):
-    def __init__(self, comparing_object, tables, check_schema, mapping, service_dir):
+    def __init__(self, comparing_object, tables, check_schema, mapping, service_dir, logger):
         super(ProgressWindow, self).__init__()
         self.setGeometry(50, 50, 500, 300)
         grid = QGridLayout()
@@ -22,6 +22,7 @@ class ProgressWindow(QDialog):
         self.data_label = QLabel()
         self.data_label.setFixedWidth(300)
         self.start_time = datetime.datetime.now()
+        self.logger = logger
         schema_checking = QLabel('Schema checking')
         data_checking = QLabel('Data checking')
         grid.addWidget(schema_checking, 0, 0)

@@ -900,7 +900,8 @@ class MainUI(QWidget):
                                                         comparing_info)
                 Logger(self.logging_level).info('Comparing started!')
                 check_schema = self.get_checkbox_state(self.cb_enable_schema_checking)
-                progress = ProgressWindow(comparing_object, self.tables, check_schema, mapping, self.service_dir)
+                progress = ProgressWindow(comparing_object, self.tables, check_schema, mapping, self.service_dir,
+                                          Logger(self.logging_level))
                 progress.exec()
 
 

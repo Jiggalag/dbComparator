@@ -11,6 +11,7 @@ than some hardcoded value, I should decrease comparing step.
 7. Add special search lineedits to modal windows like "skip_tables".
 8. Only first error flag not works.
 9. On progress window fix "Processing"-string. It should be made with different layout to not cut tablenames.
+10. Fix broken "only tables" field.
 
 Epics:
 0. Support dataframe comparing.
