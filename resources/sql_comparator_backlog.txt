@@ -12,6 +12,7 @@ than some hardcoded value, I should decrease comparing step.
 8. Only first error flag not works.
 9. On progress window fix "Processing"-string. It should be made with different layout to not cut tablenames.
 10. Fix broken "only tables" field.
+11. Gix hanging of comparator on huge tables (like creative_page_position for irving).
 
 Epics:
 0. Support dataframe comparing.
