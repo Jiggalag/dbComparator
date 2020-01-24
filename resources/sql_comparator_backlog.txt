@@ -11,9 +11,12 @@ than some hardcoded value, I should decrease comparing step.
 7. Add special search lineedits to modal windows like "skip_tables".
 8. Only first error flag not works.
 9. On progress window fix "Processing"-string. It should be made with different layout to not cut tablenames.
-10. Fix broken "only tables" field.
-11. Fix hanging of comparator on huge tables (like creative_page_position for irving).
-12. Probably we should fill all connection fields before checking connection.
+10. Fix hanging of comparator on huge tables (like creative_page_position for irving).
+11. Probably we should fill all connection fields before checking connection.
+12. a. Open some presaved config with Ctrl + O.
+    b. Open different config with Ctrl + O.
+    AR: application crashed.
+    ER: application opened new config.
 
 Epics:
 0. Support dataframe comparing.
