@@ -123,6 +123,9 @@ class MainUI(QWidget):
         self.cb_entities = QCheckBox('Entities and others', self)
         self.cb_entities.setChecked(self._toggle)
         self.cb_entities.clicked.connect(self.toggle)
+        self.cb_enable_dataframes = QCheckBox('Enable dataframes', self)
+        self.cb_enable_dataframes.toggle()
+        self.cb_enable_dataframes.setChecked(False)
 
 
         # Buttons
@@ -208,6 +211,7 @@ class MainUI(QWidget):
         grid.addWidget(self.cb_fail_with_first_error, 11, 0)
         grid.addWidget(self.cb_reports, 10, 1)
         grid.addWidget(self.cb_entities, 11, 1)
+        grid.addWidget(self.cb_enable_dataframes, 10, 2)
         grid.addWidget(self.checking_mode_label, 6, 3)
         grid.addWidget(self.day_summary_mode, 7, 3)
         grid.addWidget(self.section_summary_mode, 8, 3)
