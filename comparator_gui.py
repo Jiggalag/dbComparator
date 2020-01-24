@@ -900,6 +900,10 @@ class MainUI(QWidget):
                                                         comparing_info)
                 Logger(self.logging_level).info('Comparing started!')
                 check_schema = self.get_checkbox_state(self.cb_enable_schema_checking)
+                for table in properties.get('skip_tables').split(','):
+                    if table in self.tables:
+                        self.tables.pop(table)
+                        self.logger.debug(f'Deleted table {table} from self.tables list')
                 progress = ProgressWindow(comparing_object, self.tables, check_schema, mapping, self.service_dir,
                                           Logger(self.logging_level))
                 progress.exec()
