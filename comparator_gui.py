@@ -915,8 +915,9 @@ class MainUI(QWidget):
                         if table in self.tables:
                             self.tables.pop(table)
                             self.logger.debug(f'Deleted table {table} from self.tables list')
+                enabled_dfs = self.cb_enable_dataframes.isChecked()
                 progress = ProgressWindow(comparing_object, self.tables, check_schema, mapping, self.service_dir,
-                                          Logger(self.logging_level))
+                                          Logger(self.logging_level), enabled_dfs)
                 progress.exec()
 
 

@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplica
 
 
 class ProgressWindow(QDialog):
-    def __init__(self, comparing_object, tables, check_schema, mapping, service_dir, logger):
+    def __init__(self, comparing_object, tables, check_schema, mapping, service_dir, logger, dataframes_enabled):
         super(ProgressWindow, self).__init__()
         self.setGeometry(50, 50, 500, 300)
         grid = QGridLayout()
@@ -23,6 +23,7 @@ class ProgressWindow(QDialog):
         self.data_label.setFixedWidth(300)
         self.start_time = datetime.datetime.now()
         self.logger = logger
+        self.dataframes_enabled = dataframes_enabled
         schema_checking = QLabel('Schema checking')
         data_checking = QLabel('Data checking')
         grid.addWidget(schema_checking, 0, 0)
@@ -47,7 +48,11 @@ class ProgressWindow(QDialog):
                 self.completed = part * (list(self.tables.keys()).index(table) + 1)
                 self.progress_schema.setValue(self.completed)
                 self.schema_label.setText(f'Processing of {table} table...')
-                self.comparing_object.compare_table_metadata(table)
+                if self.dataframes_enabled:
+                    pass
+                    # TODO add dataframe realisation
+                else:
+                    self.comparing_object.compare_table_metadata(table)
                 QApplication.processEvents()
                 # TODO: add record to log with total time of schema checking
             self.schema_label.setText(f'Schemas successfully compared...')
@@ -60,8 +65,12 @@ class ProgressWindow(QDialog):
             self.progress_data.setValue(self.completed)
             self.data_label.setText(f'Processing of {table} table...')
             is_report = self.tables.get(table).get('is_report')
-            self.comparing_object.compare_data(service_dir=self.service_dir, mapping=self.mapping, table=table,
-                                               is_report=is_report)
+            if self.dataframes_enabled:
+                pass
+                # TODO add dataframe realisation
+            else:
+                self.comparing_object.compare_data(service_dir=self.service_dir, mapping=self.mapping, table=table,
+                                                   is_report=is_report)
             QApplication.processEvents()
         self.data_label.setText(f'Data successfully compared...')
         data_comparing_time = datetime.datetime.now() - schema_checking_time
