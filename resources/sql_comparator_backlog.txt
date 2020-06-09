@@ -17,8 +17,7 @@ than some hardcoded value, I should decrease comparing step.
     b. Open different config with Ctrl + O.
     AR: application crashed.
     ER: application opened new config.
-13. Add tables with already detected differs to lists "only tables" as disabled elements with tips and to "skip tables"
-as a elements, which user cannot exclude from skip-list.
+13. Add tables with already detected differs to "skip tables" as a elements, which user cannot exclude from skip-list.
 
 
 Epics:

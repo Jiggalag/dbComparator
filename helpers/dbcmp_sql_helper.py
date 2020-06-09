@@ -14,54 +14,57 @@ class DbAlchemyHelper:
         self.db = connect_parameters.get('db')
         self.db_not_found = False
         self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}')
-        self.connection = self.engine.connect()
-        self.insp = sqlalchemy.inspect(self.engine)
-        self.db_list = self.insp.get_schema_names()
-        if self.db is not None and self.db_list:
-            if self.db not in self.db_list:
-                self.db_not_found = True
-            else:
-                self.connection.execute(f'USE {self.db};')
-                self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.db}')
         self.logger = logger
-        self.hide_columns = [
-            'archived',
-            'addonFields',
-            'hourOfDayS',
-            'dayOfWeekS',
-            'impCost',
-            'id']
-        self.attempts = 5
-        self.mode = 'detailed'
-        self.comparing_step = 10000
-        self.excluded_tables = []
-        self.client_ignored_tables = []
-        self.check_schema = True
-        self.check_depth = 7
-        self.quick_fall = False
-        self.separate_checking = "both"
-        self.schema_columns = [
-            "TABLE_CATALOG",
-            "TABLE_NAME",
-            "COLUMN_NAME",
-            "ORDINAL_POSITION",
-            "COLUMN_DEFAULT",
-            "IS_NULLABLE",
-            "DATA_TYPE",
-            "CHARACTER_MAXIMUM_LENGTH",
-            "CHARACTER_OCTET_LENGTH",
-            "NUMERIC_PRECISION",
-            "NUMERIC_SCALE",
-            "DATETIME_PRECISION",
-            "CHARACTER_SET_NAME",
-            "COLLATION_NAME",
-            "COLUMN_TYPE",
-            "COLUMN_KEY",
-            "EXTRA",
-            "COLUMN_COMMENT",
-            "GENERATION_EXPRESSION"
-        ]
-        self.set_keyvalues(**kwargs)
+        try:
+            self.connection = self.engine.connect()
+            self.insp = sqlalchemy.inspect(self.engine)
+            self.db_list = self.insp.get_schema_names()
+            if self.db is not None and self.db_list:
+                if self.db not in self.db_list:
+                    self.db_not_found = True
+                else:
+                    self.connection.execute(f'USE {self.db};')
+                    self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.db}')
+            self.hide_columns = [
+                'archived',
+                'addonFields',
+                'hourOfDayS',
+                'dayOfWeekS',
+                'impCost',
+                'id']
+            self.attempts = 5
+            self.mode = 'detailed'
+            self.comparing_step = 10000
+            self.excluded_tables = []
+            self.client_ignored_tables = []
+            self.check_schema = True
+            self.check_depth = 7
+            self.quick_fall = False
+            self.separate_checking = "both"
+            self.schema_columns = [
+                "TABLE_CATALOG",
+                "TABLE_NAME",
+                "COLUMN_NAME",
+                "ORDINAL_POSITION",
+                "COLUMN_DEFAULT",
+                "IS_NULLABLE",
+                "DATA_TYPE",
+                "CHARACTER_MAXIMUM_LENGTH",
+                "CHARACTER_OCTET_LENGTH",
+                "NUMERIC_PRECISION",
+                "NUMERIC_SCALE",
+                "DATETIME_PRECISION",
+                "CHARACTER_SET_NAME",
+                "COLLATION_NAME",
+                "COLUMN_TYPE",
+                "COLUMN_KEY",
+                "EXTRA",
+                "COLUMN_COMMENT",
+                "GENERATION_EXPRESSION"
+            ]
+            self.set_keyvalues(**kwargs)
+        except sqlalchemy.exc.OperationalError as e:
+            self.logger.error(e)
 
     def select(self, query):
         if self.connection is not None:
