@@ -44,17 +44,17 @@ class ProgressWindow(QDialog):
         part = 100 / len(self.tables)
         if self.check_schema:
             self.setWindowTitle("Comparing metadata...")
+            schema_start_time = datetime.datetime.now()
             for table in self.tables:
                 self.completed = part * (list(self.tables.keys()).index(table) + 1)
                 self.progress_schema.setValue(self.completed)
                 self.schema_label.setText(f'Processing of {table} table...')
                 if self.dataframes_enabled:
-                    pass
-                    # TODO add dataframe realisation
+                    self.comparing_object.compare_table_metadata(table)
                 else:
                     self.comparing_object.compare_table_metadata(table)
                 QApplication.processEvents()
-                # TODO: add record to log with total time of schema checking
+            self.logger.info(f'Comparing of schemas finished in {datetime.datetime.now() - schema_start_time}')
             self.schema_label.setText(f'Schemas successfully compared...')
         else:
             self.logger.info("Schema checking disabled...")

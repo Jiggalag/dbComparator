@@ -2,21 +2,62 @@ import numpy as np
 import pandas as pd
 
 
-def get_dataframes_diff(prod_columns, test_columns):
-    # TODO: clarify, how I can dinamically set indexes for different tables
+def get_metadata_dataframe_diff(prod_columns, test_columns, logger):
+    prod_columnnames_set = set(prod_columns.COLUMN_NAME.values.tolist())
+    test_columnnames_set = set(test_columns.COLUMN_NAME.values.tolist())
+    prod_uniq = set(prod_columns.COLUMN_NAME.values.tolist()) - set(test_columns.COLUMN_NAME.values.tolist())
+    test_uniq = set(test_columns.COLUMN_NAME.values.tolist()) - set(prod_columns.COLUMN_NAME.values.tolist())
+    # TODO: clarify, how I can dynamically set indexes for different tables
+    # df_all = pd.concat([prod_columns.set_index('id'), test_columns.set_index('id')], axis='columns', keys=['First', 'Second'])
+    if not any([prod_uniq, test_uniq]):
+        prod_columns.fillna(value=pd.np.nan, inplace=True)
+        prod_columns = prod_columns.fillna(0)
+        test_columns.fillna(value=pd.np.nan, inplace=True)
+        result_dataframe = pd.DataFrame([False])
+        try:
+            result_dataframe = (prod_columns == test_columns)
+        except ValueError as e:
+            logger.warn(e)
+            # TODO: add logic for comparing non-identically labeled DataFrame object
+        if all(result_dataframe):
+            return pd.DataFrame()
+        else:
+            df_all = pd.concat([prod_columns, test_columns], axis='columns', keys=['First', 'Second'])
+            df_final = df_all.swaplevel(axis='columns')[prod_columns.columns[1:]]
+            df_final[(prod_columns != test_columns).any(1)].style.apply(highlight_diff, axis=None)
+            return df_final
+    else:
+        if prod_uniq:
+            return pd.DataFrame(list(prod_uniq))
+        else:
+            return pd.DataFrame(list(test_uniq))
+
+
+def get_dataframes_diff(prod_columns, test_columns, logger):
+    # TODO: clarify, how I can dynamically set indexes for different tables
     # df_all = pd.concat([prod_columns.set_index('id'), test_columns.set_index('id')], axis='columns', keys=['First', 'Second'])
     prod_columns.fillna(value=pd.np.nan, inplace=True)
     prod_columns = prod_columns.fillna(0)
     test_columns.fillna(value=pd.np.nan, inplace=True)
     test_columns = test_columns.fillna(0)
-    result_dataframe = (prod_columns == test_columns)
-    if any(result_dataframe):
+    result_dataframe = pd.DataFrame([False])
+    try:
+        result_dataframe = (prod_columns == test_columns)
+    except ValueError as e:
+        logger.warn(e)
+        # TODO: add logic for comparing non-identically labeled DataFrame object
+    if all(result_dataframe):
         return pd.DataFrame()
     else:
         df_all = pd.concat([prod_columns, test_columns], axis='columns', keys=['First', 'Second'])
-        df_final = df_all.swaplevel(axis='columns')[prod_columns.columns[1:]]
+        df_final = df_all.swaplevel(axis='COLUMN_NAME')[prod_columns.columns[1:]]
         df_final[(prod_columns != test_columns).any(1)].style.apply(highlight_diff, axis=None)
         return df_final
+
+
+def get_id_dataframe():
+    pass
+
 
 def highlight_diff(data, color='yellow'):
     attr = 'background-color: {}'.format(color)

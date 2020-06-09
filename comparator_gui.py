@@ -46,7 +46,8 @@ class MainUI(QWidget):
         self.columns = list()
         self.prod_connect = False
         self.test_connect = False
-        self.logger = Logger('DEBUG')
+        self.logging_level = 'DEBUG'
+        self.logger = Logger(self.logging_level)
         self._toggle = True
         self.OS = operating_system
         if self.OS == "Windows":
@@ -312,12 +313,19 @@ class MainUI(QWidget):
             tables = list(set(self.prod_tables.keys()) & set(self.test_tables.keys()))
             tables.sort()
             for table in tables:
-                if self.prod_tables.get(table).get('columns') == self.test_tables.get(table).get('columns'):
+                prod_columns = self.prod_tables.get(table).get('columns')
+                test_columns = self.test_tables.get(table).get('columns')
+                if prod_columns == test_columns:
                     self.tables.update({table: self.prod_tables.get(table)})
                 else:
                     self.logger.error(f"There is different columns for table {table}.")
-                    self.logger.info(f"Prod columns: {self.prod_tables.get(table).get('columns')}")
-                    self.logger.info(f"Test columns: {self.test_tables.get(table).get('columns')}")
+                    self.logger.warn(f"Table {table} excluded from comparing")
+                    prod_uniq_columns = set(prod_columns) - set(test_columns)
+                    test_uniq_columns = set(test_columns) - set(prod_columns)
+                    if prod_uniq_columns:
+                        self.logger.info(f"Uniq columns for prod {table}: {prod_uniq_columns}")
+                    if test_uniq_columns:
+                        self.logger.info(f"Uniq columns for test {table}: {test_uniq_columns}")
             self.tables_for_ui = self.tables.copy()
             self.calculate_excluded_columns()
 

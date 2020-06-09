@@ -156,7 +156,7 @@ class Object:
         if (prod_columns is None) or (test_columns is None):
             self.logger.warn(f'Table {table} skipped because something going bad')
             return False
-        diff_df = df_compare_helper.get_dataframes_diff(prod_columns, test_columns)
+        diff_df = df_compare_helper.get_metadata_dataframe_diff(prod_columns, test_columns, self.logger)
         if not diff_df.empty:
             self.logger.error(f"Schema of tables {table} differs!")
             # TODO: adding serializing to html file on disc
@@ -164,3 +164,8 @@ class Object:
         schema_comparing_time = datetime.datetime.now() - start_time
         self.logger.debug(f"Schema of table {table} compared in {schema_comparing_time}")
         return True
+
+    def get_single_column_dataframe(self, connection, table, columnname):
+        query = (f"SELECT {columnname} from DBNAME.{table};")
+        return dbcmp_sql_helper.get_raw_object(connection, query)
+

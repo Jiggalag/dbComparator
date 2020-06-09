@@ -162,7 +162,6 @@ class DbAlchemyHelper:
     def parallel_select(connection_list, query):
         pool = Pool(2)  # TODO: remove hardcode, change to dynamically defining amount of threads
         result = pool.map((lambda x: pd.read_sql(query.replace('DBNAME', x.url.database), x)), connection_list)
-        # result = pool.map((lambda x: x.execute(query.replace('DBNAME', x.url.database))), connection_list)  # TODO: add try/catch
         pool.close()
         pool.join()
         return result
@@ -186,10 +185,18 @@ def get_raw_objects(connection_list, query):
         return result[0], result[1]
 
 
+def get_raw_object(connection, query):
+    return pd.read_sql(query.replace('DBNAME', connection.url.database), connection)
+
+
 # returns list for easy convertation to set
 # TODO: remove this interlayer
 def get_comparable_objects(connection_list, query):
     result = get_raw_objects(connection_list, query)
+    if len(result[0].index) != len(result[1].index):
+        return result[0], result[1]
+    result[0].sort_index(axis=1)
+    result[1].sort_index(axis=1)
     return result[0], result[1]
 
 
