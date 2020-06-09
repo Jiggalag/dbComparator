@@ -59,27 +59,27 @@ class Comparation:
             self.logger.warn(f"Table {self.table} is empty on test-server!")
             return True, 0
         if prod_record_amount != test_record_amount:
-            sub_result, instance_type, percents = self.substract(prod_record_amount, test_record_amount)
+            sub_result, instance_type, percents = self.subtract(prod_record_amount, test_record_amount)
             if instance_type == 'Prod':
                 base = self.prod_engine.url.database
             else:
                 base = self.test_engine.url.database
-            self.logger.warn((f'Amount of records differs for table {self.table}'
+            self.logger.warn((f'Amount of records differs for table {self.table}. '
                               f'Prod record amount: {prod_record_amount}. '
-                              f'Test record amount: {test_record_amount}. '
-                              f'Db {base} have more records. '
-                              f'Difference equals {sub_result}, {percents:.5f} percents'))
+                              f'Test record amount: {test_record_amount}.'))
+            self.logger.warn((f'Db {base} have more records. '
+                              f'Difference equals {sub_result}, {percents:.5f}%'))
         max_amount = max(prod_record_amount, test_record_amount)
         return False, max_amount
 
     @staticmethod
-    def substract(prod_amount, test_amount):
+    def subtract(prod_amount, test_amount):
         if prod_amount > test_amount:
-            substraction = prod_amount - test_amount
+            subtraction = prod_amount - test_amount
             instance_type = 'Prod'
-            percents = substraction / prod_amount
+            percents = subtraction / prod_amount * 100
         else:
-            substraction = test_amount - prod_amount
+            subtraction = test_amount - prod_amount
             instance_type = 'Test'
-            percents = substraction / test_amount
-        return substraction, instance_type, percents
+            percents = subtraction / test_amount * 100
+        return subtraction, instance_type, percents
