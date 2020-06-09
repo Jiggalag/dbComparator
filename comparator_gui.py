@@ -447,7 +447,14 @@ class MainUI(QWidget):
                         self.le_test_db.show()
                         self.set_value(self.le_test_db, value)
                     elif 'only_tables' in string:
-                        self.set_value(self.le_only_tables, value)
+                        tmp = ''
+                        for table in value.split(','):
+                            if table in self.tables:
+                                tmp = tmp + table + ','
+                            else:
+                                self.logger.warn(f'Table {table} excluded from only_table section '
+                                                 f'because it differs on both databases')
+                        self.set_value(self.le_only_tables, tmp)
                     elif 'skip_tables' in string:
                         self.set_value(self.le_excluded_tables, value)
                     elif 'comparing_step' in string:
