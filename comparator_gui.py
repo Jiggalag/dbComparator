@@ -47,10 +47,10 @@ class MainUI(QWidget):
         self.columns = list()
         self.prod_connect = False
         self.test_connect = False
-        self.logging_level = 'DEBUG'
+        self.logging_level = logging.DEBUG
         self.logger = logging.getLogger("dbComparator")
         self.logger.setLevel(level=self.logging_level)
-        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+        formatter = logging.Formatter('%(asctime)s [%(levelname)s] - %(message)s')
         ch = logging.StreamHandler()
         ch.setFormatter(formatter)
         self.logger.addHandler(ch)
@@ -58,21 +58,18 @@ class MainUI(QWidget):
         self.OS = operating_system
         if self.OS == "Windows":
             # TODO: add creation of both directories below
-            self.service_dir = "C:\\comparator"
+            self.service_dir = "C:\\comparator\\"
             self.test_dir = "C:\\comparator\\test_results\\"
-            fh = logging.FileHandler('C:\\comparator\dbcomparator.log')
-            fh.setLevel(self.logging_level)
-            fh.setFormatter(formatter)
-            self.logger.addHandler(fh)
         else:
             self.service_dir = os.path.expanduser('~') + "/comparator/"
             Path(self.service_dir).mkdir(parents=True, exist_ok=True)
             self.test_dir = os.path.expanduser('~') + "/comparator/test_results/"
             Path(self.test_dir).mkdir(parents=True, exist_ok=True)
-            fh = logging.FileHandler(os.path.expanduser('~') + '/comparator/dbcomparator.log')
-            fh.setLevel(self.logging_level)
-            fh.setFormatter(formatter)
-            self.logger.addHandler(fh)
+        fh = logging.FileHandler(self.service_dir + 'dbcomparator.log')
+        fh.setLevel(self.logging_level)
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
+        self.logger.debug('File handler added successfully')
         self.logger.info('Logger successfully initialized')
         self.statusBar = status_bar
         grid = QGridLayout()
@@ -144,7 +141,6 @@ class MainUI(QWidget):
         self.cb_enable_dataframes = QCheckBox('Enable dataframes', self)
         self.cb_enable_dataframes.toggle()
         self.cb_enable_dataframes.setChecked(False)
-
 
         # Buttons
 
