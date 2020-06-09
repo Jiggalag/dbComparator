@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import logging
 import os
+from pathlib import Path
 import platform
 import shutil
 import sys
@@ -21,7 +23,6 @@ from custom_ui_elements.clickable_lineedit import ClickableLineEdit
 from custom_ui_elements.progress_window import ProgressWindow
 from custom_ui_elements.radiobutton_items_view import RadiobuttonItemsView
 from helpers import dbcmp_sql_helper
-from helpers.logging_helper import Logger
 
 if "Win" in platform.system():
     operating_system = "Windows"
@@ -47,16 +48,32 @@ class MainUI(QWidget):
         self.prod_connect = False
         self.test_connect = False
         self.logging_level = 'DEBUG'
-        self.logger = Logger(self.logging_level)
+        self.logger = logging.getLogger("dbComparator")
+        self.logger.setLevel(level=self.logging_level)
+        formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+        ch = logging.StreamHandler()
+        ch.setFormatter(formatter)
+        self.logger.addHandler(ch)
         self._toggle = True
         self.OS = operating_system
         if self.OS == "Windows":
+            # TODO: add creation of both directories below
             self.service_dir = "C:\\comparator"
-            self.test_dir = "C:\\dbComparator\\"
+            self.test_dir = "C:\\comparator\\test_results\\"
+            fh = logging.FileHandler('C:\\comparator\dbcomparator.log')
+            fh.setLevel(self.logging_level)
+            fh.setFormatter(formatter)
+            self.logger.addHandler(fh)
         else:
-            self.service_dir = "/tmp/comparator/"
-            self.test_dir = os.getcwd() + "/test_results/"
-
+            self.service_dir = os.path.expanduser('~') + "/comparator/"
+            Path(self.service_dir).mkdir(parents=True, exist_ok=True)
+            self.test_dir = os.path.expanduser('~') + "/comparator/test_results/"
+            Path(self.test_dir).mkdir(parents=True, exist_ok=True)
+            fh = logging.FileHandler(os.path.expanduser('~') + '/comparator/dbcomparator.log')
+            fh.setLevel(self.logging_level)
+            fh.setFormatter(formatter)
+            self.logger.addHandler(fh)
+        self.logger.info('Logger successfully initialized')
         self.statusBar = status_bar
         grid = QGridLayout()
         grid.setSpacing(10)
@@ -83,25 +100,25 @@ class MainUI(QWidget):
         # Line edits
 
         self.le_prod_host = QLineEdit(self)
-        self.le_prod_host.textChanged.connect(self.check_prod_sqlhost)
+        self.le_prod_host.textChanged.connect(lambda: self.check_sqlhost('prod'))
         self.le_prod_user = QLineEdit(self)
-        self.le_prod_user.textChanged.connect(self.check_prod_sqlhost)
+        self.le_prod_user.textChanged.connect(lambda: self.check_sqlhost('prod'))
         self.le_prod_password = QLineEdit(self)
         self.le_prod_password.setEchoMode(QLineEdit.Password)
-        self.le_prod_password.textChanged.connect(self.check_prod_sqlhost)
+        self.le_prod_password.textChanged.connect(lambda: self.check_sqlhost('prod'))
         self.le_prod_db = ClickableLineEdit(self)
-        self.le_prod_db.textChanged.connect(self.check_prod_db)
+        self.le_prod_db.textChanged.connect(lambda: self.check_db('prod'))
         self.le_prod_db.clicked.connect(self.set_prod_db)
         self.le_prod_db.hide()
         self.le_test_host = QLineEdit(self)
-        self.le_test_host.textChanged.connect(self.check_test_sqlhost)
+        self.le_test_host.textChanged.connect(lambda: self.check_sqlhost('test'))
         self.le_test_user = QLineEdit(self)
-        self.le_test_user.textChanged.connect(self.check_test_sqlhost)
+        self.le_test_user.textChanged.connect(lambda: self.check_sqlhost('test'))
         self.le_test_password = QLineEdit(self)
         self.le_test_password.setEchoMode(QLineEdit.Password)
-        self.le_test_password.textChanged.connect(self.check_test_sqlhost)
+        self.le_test_password.textChanged.connect(lambda: self.check_sqlhost('test'))
         self.le_test_db = ClickableLineEdit(self)
-        self.le_test_db.textChanged.connect(self.check_test_db)
+        self.le_test_db.textChanged.connect(lambda: self.check_db('test'))
         self.le_test_db.clicked.connect(self.set_test_db)
         self.le_test_db.hide()
         self.le_send_mail_to = QLineEdit(self)
@@ -299,7 +316,7 @@ class MainUI(QWidget):
         self.adv = AdvancedSettingsItem(operating_system, defaults)
         self.adv.exec_()
         self.logging_level = self.adv.logging_level
-        self.logger = Logger(self.logging_level)
+        self.logger.setLevel(self.logging_level)
         self.comparing_step = self.adv.comparing_step
         self.depth_report_check = self.adv.depth_report_check
         self.schema_columns = self.adv.schema_columns
@@ -319,7 +336,7 @@ class MainUI(QWidget):
                     self.tables.update({table: self.prod_tables.get(table)})
                 else:
                     self.logger.error(f"There is different columns for table {table}.")
-                    self.logger.warn(f"Table {table} excluded from comparing")
+                    self.logger.warning(f"Table {table} excluded from comparing")
                     prod_uniq_columns = set(prod_columns) - set(test_columns)
                     test_uniq_columns = set(test_columns) - set(prod_columns)
                     if prod_uniq_columns:
@@ -449,11 +466,12 @@ class MainUI(QWidget):
                     elif 'only_tables' in string:
                         tmp = ''
                         for table in value.split(','):
-                            if table in self.tables:
-                                tmp = tmp + table + ','
-                            else:
-                                self.logger.warn(f'Table {table} excluded from only_table section '
-                                                 f'because it differs on both databases')
+                            if self.tables:
+                                if table in self.tables:
+                                    tmp = tmp + table + ','
+                                else:
+                                    self.logger.warning(f'Table {table} excluded from only_table section '
+                                                     f'because it differs on both databases')
                         self.set_value(self.le_only_tables, tmp)
                     elif 'skip_tables' in string:
                         self.set_value(self.le_excluded_tables, value)
@@ -532,7 +550,7 @@ class MainUI(QWidget):
                         else:
                             self.detailed_mode.setChecked(True)
         except FileNotFoundError as err:
-            self.logger.warn(f'File not found, or, probably, you just pressed cancel. Warn: {err.args[1]}')
+            self.logger.warning(f'File not found, or, probably, you just pressed cancel. Warn: {err.args[1]}')
 
         # Set tooltips
 
@@ -685,116 +703,115 @@ class MainUI(QWidget):
             self.btn_set_configuration.setEnabled(True)
             self.calculate_table_list()
 
-    def check_prod_sqlhost(self):
-        empty_fields = False
-        if not self.le_prod_host.text():
-            empty_fields = True
-        elif not self.le_prod_user.text():
-            empty_fields = True
-        elif not self.le_prod_password.text():
-            empty_fields = True
-        if empty_fields:
-            return False
-        prod_dict = {
-            'host': self.le_prod_host.text(),
-            'user': self.le_prod_user.text(),
-            'password': self.le_prod_password.text(),
-        }
-        try:
-            self.prod_db_list = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger).db_list
-            self.prod_db_label.show()
-            self.le_prod_db.show()
-            self.logger.info(f"Connection to {prod_dict.get('host')} established successfully!")
-            return True
-        except pymysql.OperationalError as err:
-            self.logger.warn(f"Connection to {prod_dict.get('host')} failed\n\n{err.args[1]}")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {prod_dict.get('host')} failed\n\n{err.args[1]} ",
-                                QMessageBox.Ok, QMessageBox.Ok)
-            return False
-        except pymysql.InternalError as err:
-            self.logger.warn(f"Connection to {prod_dict.get('host')} failed\n\n{err.args[1]}")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {prod_dict.get('host')} failed\n\n{err.args[1]}",
-                                QMessageBox.Ok, QMessageBox.Ok)
-            return False
-
-    def check_prod_db(self):
-        prod_dict = {
-            'host': self.le_prod_host.text(),
-            'user': self.le_prod_user.text(),
-            'password': self.le_prod_password.text(),
-            'db': self.le_prod_db.text()
-        }
-        self.prod_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger)
-        self.prod_tables = self.prod_sql_connection.get_tables_columns()
-        if self.prod_tables is not None:
-            self.logger.info(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} established successfully!")
-            self.change_bar_message('prod', True)
-            return True
+    def check_db(self, instance_type):
+        if instance_type not in ['prod', 'test']:
+            self.logger.critical(f'Unknown instance type {instance_type}, fix this in code!')
+            sys.exit(1)  # TODO: use fail-fast
+        if instance_type == 'prod':
+            host = self.le_prod_host.text()
+            user = self.le_prod_user.text()
+            password = self.le_prod_password.text()
+            db = self.le_prod_db.text()
         else:
-            self.logger.warn(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} failed")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} "
-                                f"failed\n\n", QMessageBox.Ok, QMessageBox.Ok)
-            self.change_bar_message('prod', False)
-            return False
-
-    def check_test_db(self):
-        test_dict = {
-            'host': self.le_test_host.text(),
-            'user': self.le_test_user.text(),
-            'password': self.le_test_password.text(),
-            'db': self.le_test_db.text()
-        }
-        self.test_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger)
-        self.test_tables = self.test_sql_connection.get_tables_columns()
-        if self.test_tables is not None:
-            self.logger.info(f"Connection to db {test_dict.get('host')}/"
-                             f"{test_dict.get('db')} established successfully!")
-            self.change_bar_message('test', True)
-            return True
+            host = self.le_test_host.text()
+            user = self.le_test_user.text()
+            password = self.le_test_password.text()
+            db = self.le_test_db.text()
+        if all([host, user, password, db]):
+            access_data = {
+                'host': host,
+                'user': user,
+                'password': password,
+                'db': db
+            }
+            if instance_type == 'prod':
+                self.prod_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(access_data, self.logger)
+                self.prod_tables = self.prod_sql_connection.get_tables_columns()
+                if self.prod_tables is not None:
+                    self.logger.info(
+                        f"Connection to {access_data.get('host')}/{access_data.get('db')} established successfully!")
+                    self.change_bar_message('prod', True)
+                    return True
+                else:
+                    self.logger.warning(f"Connection to {access_data.get('host')}/{access_data.get('db')} failed")
+                    QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
+                                        f"Connection to {access_data.get('host')}/{access_data.get('db')} "
+                                        f"failed\n\n", QMessageBox.Ok, QMessageBox.Ok)
+                    self.change_bar_message('prod', False)
+                    return False
+            else:
+                self.test_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(access_data, self.logger)
+                self.test_tables = self.test_sql_connection.get_tables_columns()
+                if self.test_tables is not None:
+                    self.logger.info(f"Connection to db {access_data.get('host')}/"
+                                     f"{access_data.get('db')} established successfully!")
+                    self.change_bar_message('test', True)
+                    return True
+                else:
+                    self.logger.warning(f"Connection to {access_data.get('host')}/{access_data.get('db')} failed")
+                    QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
+                                        f"Connection to {access_data.get('host')}/{access_data.get('db')} failed\n\n",
+                                        QMessageBox.Ok, QMessageBox.Ok)
+                    self.change_bar_message('test', False)
+                    return False
         else:
-            self.logger.warn(f"Connection to {test_dict.get('host')}/{test_dict.get('db')} failed")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {test_dict.get('host')}/{test_dict.get('db')} failed\n\n",
-                                QMessageBox.Ok, QMessageBox.Ok)
-            self.change_bar_message('test', False)
-            return False
+            if not host:
+                self.logger.debug(f'Field {instance_type}.sql-host is not filled')
+            elif not user:
+                self.logger.debug(f'Field {instance_type}.sql-user is not filled')
+            elif not password:
+                self.logger.debug(f'Field {instance_type}.sql-password is not filled')
+            else:
+                self.logger.debug(f'Field {instance_type}.sql-db is not filled')
 
 
-    def check_test_sqlhost(self):
-        empty_fields = False
-        if not self.le_test_host.text():
-            empty_fields = True
-        if not self.le_test_user.text():
-            empty_fields = True
-        if not self.le_test_password.text():
-            empty_fields = True
-        if empty_fields:
-            return False
-        test_dict = {
-            'host': self.le_test_host.text(),
-            'user': self.le_test_user.text(),
-            'password': self.le_test_password.text()
-        }
-        try:
-            self.test_db_list = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger).db_list
-            self.test_db_label.show()
-            self.le_test_db.show()
-            self.logger.info(f"Connection to {test_dict.get('host')} established successfully!")
-            return True
-        except pymysql.OperationalError as err:
-            self.logger.warn(f"Connection to {test_dict.get('host')} failed\n\n{err.args[1]}")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {test_dict.get('host')} failed\n\n{err.args[1]}",
-                                QMessageBox.Ok, QMessageBox.Ok)
-            return False
-        except pymysql.InternalError as err:
-            self.logger.warn(f"Connection to {test_dict.get('host')} failed\n\n{err.args[1]}")
-            QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                f"Connection to {test_dict.get('host')} failed\n\n{err.args[1]}",
-                                QMessageBox.Ok, QMessageBox.Ok)
+    def check_sqlhost(self, instance_type):
+        self.check_db(instance_type)
+        if instance_type not in ['prod', 'test']:
+            self.logger.critical(f'Unknown instance type {instance_type}, fix this in code!')
+            sys.exit(1)  # TODO: use fail-fast
+        if instance_type == 'prod':
+            host = self.le_prod_host.text()
+            user = self.le_prod_user.text()
+            password = self.le_prod_password.text()
+        else:
+            host = self.le_test_host.text()
+            user = self.le_test_user.text()
+            password = self.le_test_password.text()
+        if all([host, user, password]):
+            access_data = {
+                'host': host,
+                'user': user,
+                'password': password
+            }
+            try:
+                if instance_type == 'prod':
+                    self.prod_db_list = dbcmp_sql_helper.DbAlchemyHelper(access_data, self.logger).db_list
+                    self.prod_db_label.show()
+                    self.le_prod_db.show()
+                    self.logger.info(f"Connection to {access_data.get('host')} established successfully!")
+                    self.change_bar_message('prod', True)
+                    return True
+                else:
+                    self.test_db_list = dbcmp_sql_helper.DbAlchemyHelper(access_data, self.logger).db_list
+                    self.test_db_label.show()
+                    self.le_test_db.show()
+                    self.logger.info(f"Connection to {access_data.get('host')} established successfully!")
+                    self.change_bar_message('test', True)
+                    return True
+            except pymysql.OperationalError as err:
+                self.logger.warning(f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}")
+                QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
+                                    f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}",
+                                    QMessageBox.Ok, QMessageBox.Ok)
+                return False
+            except pymysql.InternalError as err:
+                self.logger.warning(f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}")
+                QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
+                                    f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}",
+                                    QMessageBox.Ok, QMessageBox.Ok)
+                return False
+        else:
             return False
 
     def get_sql_params(self):
@@ -884,7 +901,7 @@ class MainUI(QWidget):
             'hide_columns': self.le_skip_columns.text(),
             'strings_amount': self.strings_amount,
             # 'check_type': check_type,
-            'logger': Logger(self.logging_level, path_to_logs),
+            'logger': self.logger,
             'comparing_step': self.comparing_step,
             'depth_report_check': self.depth_report_check,
             'schema_columns': self.schema_columns,
@@ -917,7 +934,7 @@ class MainUI(QWidget):
                 mapping = query_constructor.prepare_column_mapping(self.prod_sql_connection, self.logger)
                 comparing_object = sql_comparing.Object(self.prod_sql_connection, self.test_sql_connection, properties,
                                                         comparing_info)
-                Logger(self.logging_level).info('Comparing started!')
+                self.logger.info('Comparing started!')
                 check_schema = self.get_checkbox_state(self.cb_enable_schema_checking)
                 only_tables = properties.get('only_tables')
                 if only_tables:
@@ -932,7 +949,7 @@ class MainUI(QWidget):
                             self.logger.debug(f'Deleted table {table} from self.tables list')
                 enabled_dfs = self.cb_enable_dataframes.isChecked()
                 progress = ProgressWindow(comparing_object, self.tables, check_schema, mapping, self.service_dir,
-                                          Logger(self.logging_level), enabled_dfs)
+                                          self.logger, enabled_dfs)
                 progress.exec()
 
 
@@ -944,7 +961,7 @@ class MainWindow(QMainWindow):
         self.statusBar.showMessage('Prod disconnected, test disconnected')
         self.ex = MainUI(self.statusBar)
         self.setCentralWidget(self.ex)
-        self.logger = Logger('DEBUG')
+        self.logger = self.ex.logger
 
         self.setGeometry(300, 300, 900, 600)
         self.setWindowTitle('dbComparator')
