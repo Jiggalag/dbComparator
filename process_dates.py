@@ -26,10 +26,10 @@ class ProcessDates:
                 self.logger.warn(f"Table {self.table} is empty in both dbs...")
                 comparing_info.empty.append(self.table)
             elif prod_dates.empty:
-                self.logger.warn(f"Table {self.table} on {self.prod_connection.db} is empty!")
+                self.logger.warn(f"Table {self.table} on {self.prod_connection.url.database} is empty!")
                 comparing_info.update_empty("prod", self.table)
             else:
-                self.logger.warn(f"Table {self.table} on {self.test_connection.db} is empty!")
+                self.logger.warn(f"Table {self.table} on {self.test_connection.url.database} is empty!")
                 comparing_info.update_empty("test", self.table)
             return []
 
@@ -57,12 +57,12 @@ class ProcessDates:
         if prod_set - test_set:
             prod_unique_dates = get_unique_dates(prod_set, test_set)
             dates_string = ",".join(prod_unique_dates)
-            self.logger.warn(f"This dates absent in {self.test_connection.db}: " +
+            self.logger.warn(f"This dates absent in {self.test_connection.url.database}: " +
                              f"{dates_string} in report table {self.table}...")
         if test_set - prod_set:
             unique_dates = get_unique_dates(test_set, prod_set)
             test_unique_dates = ",".join(unique_dates)
-            self.logger.warn(f"This dates absent in {self.prod_connection.db}: " +
+            self.logger.warn(f"This dates absent in {self.prod_connection.url.database}: " +
                              f"{test_unique_dates} in report table {self.table}...")
         result_dates = list(prod_set & test_set)
         result_dates.sort()

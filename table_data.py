@@ -1,6 +1,3 @@
-from helpers import dbcmp_sql_helper
-
-
 class Info:
     def __init__(self, logger):
         self.logger = logger
@@ -36,35 +33,12 @@ class Info:
         else:
             self.logger.error(f"There is no such stage {stage}")
 
+    # TODO: check this useless method
     def update_diff_schema(self, value):
         self.diff_schema.append(value)
 
     def update_diff_data(self, value):
         self.diff_data.append(value)
-
-    def define_table_list(self, excluded_tables, client_ignored_tables, reports, entities, connection):
-        self.tables = list(self.prod_list & self.test_list)
-        self.tables.sort()
-        for table in excluded_tables:
-            if table in self.tables:
-                self.tables.remove(table)
-        if self.diff_schema is not None:
-            for table in self.diff_schema:
-                if table in self.tables:
-                    self.tables.remove(table)
-        if (not client_ignored_tables) and client_ignored_tables is not None:
-            for table in client_ignored_tables:
-                if table in self.tables:
-                    self.tables.remove(table)
-        table_list = []
-        for table in self.tables:
-            if dbcmp_sql_helper.is_report(table, connection):
-                if reports:
-                    table_list.append(table)
-            else:
-                if entities:
-                    table_list.append(table)
-        return table_list
 
     def get_uniq_tables(self, stage):
         if stage == "prod":

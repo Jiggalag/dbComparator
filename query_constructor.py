@@ -42,7 +42,7 @@ class InitializeQuery:
                         column_list_with_sums = dbcmp_sql_helper.get_column_list_for_sum(set_column_list)
                         column_list = ",".join(column_list_with_sums)
                         query = (f"SELECT {column_list} FROM `{self.table}` {set_join_section} WHERE dt = '{dt}' "
-                                f"GROUP BY {column} ORDER BY {set_order_list};")
+                                 f"GROUP BY {column} ORDER BY {set_order_list};")
                         query_list.append(query)
             elif mode == "detailed":
                 offset = 0

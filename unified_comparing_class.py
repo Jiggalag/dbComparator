@@ -5,10 +5,11 @@ from helpers import converters, dbcmp_sql_helper
 
 
 class Comparation:
-    def __init__(self, prod_engine, test_engine, table, logger, cmp_params, prod_sql):
-        self.prod_engine = prod_engine
-        self.test_engine = test_engine
-        self.prod_sql = prod_sql
+    def __init__(self, prod_connect, test_connect, table, logger, cmp_params):
+        self.prod_sql_connection = prod_connect
+        self.test_sql_connection = test_connect
+        self.prod_engine = prod_connect.engine
+        self.test_engine = test_connect.engine
         self.table = table
         self.cmp_params = cmp_params
         self.depth_report_check = self.cmp_params.get('depth_report_check')
@@ -24,7 +25,7 @@ class Comparation:
             if dates:
                 local_break, max_amount = self.check_amount(dates)
                 self.logger.info(f'Will be checked dates {dates}')
-                alchemy_object = dbcmp_sql_helper.DbAlchemyHelper(self.prod_sql, self.logger, **self.cmp_params)
+                alchemy_object = self.prod_sql_connection.set_keyvalues(**self.cmp_params)
                 query_list = query_constructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
                                                                self.logger).report(dates, self.mode, max_amount)
             else:
@@ -32,7 +33,7 @@ class Comparation:
                 query_list = []
         else:
             local_break, max_amount = self.check_amount(None)
-            alchemy_object = dbcmp_sql_helper.DbAlchemyHelper(self.prod_sql, self.logger, **self.cmp_params)
+            alchemy_object = self.prod_sql_connection.set_keyvalues(**self.cmp_params) # TODO: AttributeError: 'DbAlchemyHelper' object has no attribute 'set_keyvalue'
             query_list = query_constructor.InitializeQuery(alchemy_object, mapping, self.table, comparing_step,
                                                            self.logger).entity(max_amount)
         if query_list:
@@ -58,27 +59,27 @@ class Comparation:
             self.logger.warn(f"Table {self.table} is empty on test-server!")
             return True, 0
         if prod_record_amount != test_record_amount:
-            sub_result, instance_type, percents = self.substract(prod_record_amount, test_record_amount)
+            sub_result, instance_type, percents = self.subtract(prod_record_amount, test_record_amount)
             if instance_type == 'Prod':
                 base = self.prod_engine.url.database
             else:
                 base = self.test_engine.url.database
-            self.logger.warn((f'Amount of records differs for table {self.table}'
+            self.logger.warn((f'Amount of records differs for table {self.table}. '
                               f'Prod record amount: {prod_record_amount}. '
-                              f'Test record amount: {test_record_amount}. '
-                              f'Db {base} have more records. '
-                              f'Difference equals {sub_result}, {percents:.5f} percents'))
+                              f'Test record amount: {test_record_amount}.'))
+            self.logger.warn((f'Db {base} have more records. '
+                              f'Difference equals {sub_result}, {percents:.5f}%'))
         max_amount = max(prod_record_amount, test_record_amount)
         return False, max_amount
 
     @staticmethod
-    def substract(prod_amount, test_amount):
+    def subtract(prod_amount, test_amount):
         if prod_amount > test_amount:
-            substraction = prod_amount - test_amount
+            subtraction = prod_amount - test_amount
             instance_type = 'Prod'
-            percents = substraction / prod_amount
+            percents = subtraction / prod_amount * 100
         else:
-            substraction = test_amount - prod_amount
+            subtraction = test_amount - prod_amount
             instance_type = 'Test'
-            percents = substraction / test_amount
-        return substraction, instance_type, percents
+            percents = subtraction / test_amount * 100
+        return subtraction, instance_type, percents

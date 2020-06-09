@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 import os
 import platform
+import shutil
 import sys
 
 import PyQt5
@@ -12,10 +12,13 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QLabel, QGridLayout, QWidget, QLineEdit, QCheckBox, QPushButton, QMessageBox
 from PyQt5.QtWidgets import QFileDialog, QRadioButton, QAction, qApp, QMainWindow
 
-from connector_ui_backend import Backend
+import query_constructor
+import sql_comparing
+import table_data
 from custom_ui_elements.advanced_settings import AdvancedSettingsItem
 from custom_ui_elements.clickable_items_view import ClickableItemsView
 from custom_ui_elements.clickable_lineedit import ClickableLineEdit
+from custom_ui_elements.progress_window import ProgressWindow
 from custom_ui_elements.radiobutton_items_view import RadiobuttonItemsView
 from helpers import dbcmp_sql_helper
 from helpers.logging_helper import Logger
@@ -34,6 +37,7 @@ class MainUI(QWidget):
     def __init__(self, status_bar):
         super().__init__()
         self.tables = dict()
+        self.tables_for_ui = dict()
         self.dbs = list()
         self.prod_db_list = list()
         self.test_db_list = list()
@@ -42,8 +46,16 @@ class MainUI(QWidget):
         self.columns = list()
         self.prod_connect = False
         self.test_connect = False
-        self.logger = Logger('DEBUG')
+        self.logging_level = 'DEBUG'
+        self.logger = Logger(self.logging_level)
         self._toggle = True
+        self.OS = operating_system
+        if self.OS == "Windows":
+            self.service_dir = "C:\\comparator"
+            self.test_dir = "C:\\dbComparator\\"
+        else:
+            self.service_dir = "/tmp/comparator/"
+            self.test_dir = os.getcwd() + "/test_results/"
 
         self.statusBar = status_bar
         grid = QGridLayout()
@@ -112,6 +124,9 @@ class MainUI(QWidget):
         self.cb_entities = QCheckBox('Entities and others', self)
         self.cb_entities.setChecked(self._toggle)
         self.cb_entities.clicked.connect(self.toggle)
+        self.cb_enable_dataframes = QCheckBox('Enable dataframes', self)
+        self.cb_enable_dataframes.toggle()
+        self.cb_enable_dataframes.setChecked(False)
 
 
         # Buttons
@@ -197,6 +212,7 @@ class MainUI(QWidget):
         grid.addWidget(self.cb_fail_with_first_error, 11, 0)
         grid.addWidget(self.cb_reports, 10, 1)
         grid.addWidget(self.cb_entities, 11, 1)
+        grid.addWidget(self.cb_enable_dataframes, 10, 2)
         grid.addWidget(self.checking_mode_label, 6, 3)
         grid.addWidget(self.day_summary_mode, 7, 3)
         grid.addWidget(self.section_summary_mode, 8, 3)
@@ -209,6 +225,26 @@ class MainUI(QWidget):
         self.setWindowIcon(QIcon('./resources/slowpoke.png'))
         self.show()
 
+    def get_only_reports(self):
+        result = dict()
+        for table in self.tables:
+            if self.tables.get(table).get('is_report'):
+                columns = self.tables.get(table).get('columns')
+                result.update({table: columns})
+            else:
+                continue
+        return result
+
+    def get_only_entities(self):
+        result = dict()
+        for table in self.tables:
+            if not self.tables.get(table).get('is_report'):
+                columns = self.tables.get(table).get('columns')
+                result.update({table: columns})
+            else:
+                continue
+        return result
+
     @pyqtSlot()
     def toggle(self):
         if all([self.cb_entities.isChecked(), self.cb_reports.isChecked()]):
@@ -217,16 +253,19 @@ class MainUI(QWidget):
             self.day_summary_mode.setEnabled(True)
             self.section_summary_mode.setEnabled(True)
             self.detailed_mode.setEnabled(True)
+            self.tables_for_ui = self.tables.copy()
         elif self.cb_entities.isChecked():
             self.cb_entities.setEnabled(False)
             self.day_summary_mode.setEnabled(False)
             self.section_summary_mode.setEnabled(False)
             self.detailed_mode.setEnabled(False)
+            self.tables_for_ui = self.get_only_entities()
         elif self.cb_reports.isChecked():
             self.cb_reports.setEnabled(False)
             self.day_summary_mode.setEnabled(True)
             self.section_summary_mode.setEnabled(True)
             self.detailed_mode.setEnabled(True)
+            self.tables_for_ui = self.get_only_reports()
 
     def clear_all(self):
         self.le_prod_host.clear()
@@ -274,20 +313,28 @@ class MainUI(QWidget):
             tables = list(set(self.prod_tables.keys()) & set(self.test_tables.keys()))
             tables.sort()
             for table in tables:
-                if self.prod_tables.get(table) == self.test_tables.get(table):
+                prod_columns = self.prod_tables.get(table).get('columns')
+                test_columns = self.test_tables.get(table).get('columns')
+                if prod_columns == test_columns:
                     self.tables.update({table: self.prod_tables.get(table)})
                 else:
-                    self.logger.error(f'There is different columns for table {table}.')
-                    self.logger.info(f'Prod columns: {self.prod_tables.get(table)}')
-                    self.logger.info(f'Test columns: {self.test_tables.get(table)}')
+                    self.logger.error(f"There is different columns for table {table}.")
+                    self.logger.warn(f"Table {table} excluded from comparing")
+                    prod_uniq_columns = set(prod_columns) - set(test_columns)
+                    test_uniq_columns = set(test_columns) - set(prod_columns)
+                    if prod_uniq_columns:
+                        self.logger.info(f"Uniq columns for prod {table}: {prod_uniq_columns}")
+                    if test_uniq_columns:
+                        self.logger.info(f"Uniq columns for test {table}: {test_uniq_columns}")
+            self.tables_for_ui = self.tables.copy()
             self.calculate_excluded_columns()
 
     def calculate_excluded_columns(self):
         excluded_tables = self.le_excluded_tables.text().split(',')
         self.columns = list()
-        for table in self.tables:
+        for table in self.tables_for_ui:
             if table not in excluded_tables:
-                columns = self.tables.get(table)
+                columns = self.tables_for_ui.get(table)
                 for column in columns:
                     if column not in self.columns:
                         self.columns.append(column)
@@ -343,7 +390,7 @@ class MainUI(QWidget):
     def set_excluded_tables(self):
         if all([self.prod_connect, self.test_connect]):
             tables_to_skip = self.le_excluded_tables.text().split(',')
-            skip_tables_view = ClickableItemsView(self.tables, tables_to_skip)
+            skip_tables_view = ClickableItemsView(self.tables_for_ui, tables_to_skip)
             skip_tables_view.exec_()
             self.le_excluded_tables.setText(','.join(skip_tables_view.selected_items))
             self.le_excluded_tables.setToolTip(self.le_excluded_tables.text().replace(',', ',\n'))
@@ -352,7 +399,7 @@ class MainUI(QWidget):
     def set_included_tables(self):
         if all([self.prod_connect, self.test_connect]):
             tables_to_include = self.le_only_tables.text().split(',')
-            only_tables_view = ClickableItemsView(self.tables, tables_to_include)
+            only_tables_view = ClickableItemsView(self.tables_for_ui, tables_to_include)
             only_tables_view.exec_()
             self.le_only_tables.setText(','.join(only_tables_view.selected_items))
             self.le_only_tables.setToolTip(self.le_only_tables.text().replace(',', ',\n'))
@@ -672,7 +719,8 @@ class MainUI(QWidget):
             'password': self.le_prod_password.text(),
             'db': self.le_prod_db.text()
         }
-        self.prod_tables = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger).get_tables_columns()
+        self.prod_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(prod_dict, self.logger)
+        self.prod_tables = self.prod_sql_connection.get_tables_columns()
         if self.prod_tables is not None:
             self.logger.info(f"Connection to {prod_dict.get('host')}/{prod_dict.get('db')} established successfully!")
             self.change_bar_message('prod', True)
@@ -692,7 +740,8 @@ class MainUI(QWidget):
             'password': self.le_test_password.text(),
             'db': self.le_test_db.text()
         }
-        self.test_tables = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger).get_tables_columns()
+        self.test_sql_connection = dbcmp_sql_helper.DbAlchemyHelper(test_dict, self.logger)
+        self.test_tables = self.test_sql_connection.get_tables_columns()
         if self.test_tables is not None:
             self.logger.info(f"Connection to db {test_dict.get('host')}/"
                              f"{test_dict.get('db')} established successfully!")
@@ -841,14 +890,43 @@ class MainUI(QWidget):
         }
         return properties_dict
 
+    @staticmethod
+    def check_service_dir(service_dir):
+        if os.path.exists(service_dir):
+            shutil.rmtree(service_dir)
+        os.mkdir(service_dir)
+
     @pyqtSlot()
     def start_work(self):
         connection_dict = self.get_sql_params()
         properties = self.get_properties()
         if connection_dict and properties:
             if all([self.prod_connect, self.test_connect]):
+                self.check_service_dir(self.service_dir)
+                self.check_service_dir(self.test_dir)
+                comparing_info = table_data.Info(self.logger)
+                comparing_info.update_table_list("prod", self.prod_sql_connection.get_tables())
+                comparing_info.update_table_list("test", self.test_sql_connection.get_tables())
+                mapping = query_constructor.prepare_column_mapping(self.prod_sql_connection, self.logger)
+                comparing_object = sql_comparing.Object(self.prod_sql_connection, self.test_sql_connection, properties,
+                                                        comparing_info)
                 Logger(self.logging_level).info('Comparing started!')
-                Backend(connection_dict, properties).run_comparing()
+                check_schema = self.get_checkbox_state(self.cb_enable_schema_checking)
+                only_tables = properties.get('only_tables')
+                if only_tables:
+                    result_tables = dict()
+                    for table in only_tables.split(','):
+                        result_tables.update({table: self.tables.get(table)})
+                    self.tables = result_tables
+                else:
+                    for table in properties.get('skip_tables').split(','):
+                        if table in self.tables:
+                            self.tables.pop(table)
+                            self.logger.debug(f'Deleted table {table} from self.tables list')
+                enabled_dfs = self.cb_enable_dataframes.isChecked()
+                progress = ProgressWindow(comparing_object, self.tables, check_schema, mapping, self.service_dir,
+                                          Logger(self.logging_level), enabled_dfs)
+                progress.exec()
 
 
 class MainWindow(QMainWindow):
