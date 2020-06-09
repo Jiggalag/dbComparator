@@ -1,3 +1,4 @@
+import logging
 import os
 
 from PyQt5.QtCore import Qt
@@ -49,8 +50,8 @@ class AdvancedSettingsItem(QDialog):
         # combobox
 
         self.cb_logging_level = QComboBox(self)
-        self.cb_logging_level.addItems(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
-        index = self.cb_logging_level.findText('DEBUG', Qt.MatchFixedString)
+        self.cb_logging_level.addItems(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET'])
+        index = self.cb_logging_level.findText('NOTSET', Qt.MatchFixedString)
         # TODO: clarify this
         if index >= 0:
             self.cb_logging_level.setCurrentIndex(index)
@@ -102,7 +103,18 @@ class AdvancedSettingsItem(QDialog):
         self.setWindowTitle('Advanced settings')
 
     def ok_pressed(self):
-        self.logging_level = self.cb_logging_level.currentText()
+        if self.cb_logging_level.currentText() == 'NOTSET':
+            self.logging_level = logging.NOTSET
+        elif self.cb_logging_level.currentText() == 'DEBUG':
+            self.logging_level = logging.DEBUG
+        elif self.cb_logging_level.currentText() == 'DEBUG':
+            self.logging_level = logging.INFO
+        elif self.cb_logging_level.currentText() == 'DEBUG':
+            self.logging_level = logging.WARN
+        elif self.cb_logging_level.currentText() == 'ERROR':
+            self.logging_level = logging.ERROR
+        else:
+            self.logging_level = logging.CRITICAL
         self.comparing_step = self.le_comparing_step.text()
         self.depth_report_check = self.le_depth_report_check.text()
         self.schema_columns = self.le_schema_columns.text()

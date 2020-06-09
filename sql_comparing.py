@@ -168,4 +168,3 @@ class Object:
     def get_single_column_dataframe(self, connection, table, columnname):
         query = (f"SELECT {columnname} from DBNAME.{table};")
         return dbcmp_sql_helper.get_raw_object(connection, query)
-
