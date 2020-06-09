@@ -1,6 +1,6 @@
 import datetime
 
-from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplication
+from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplication, QHBoxLayout, QVBoxLayout
 
 
 class ProgressWindow(QDialog):
@@ -18,20 +18,18 @@ class ProgressWindow(QDialog):
         self.progress_schema = QProgressBar(self)
         self.progress_data = QProgressBar(self)
         self.schema_label = QLabel()
-        self.schema_label.setFixedWidth(300)
         self.data_label = QLabel()
-        self.data_label.setFixedWidth(300)
         self.start_time = datetime.datetime.now()
         self.logger = logger
         self.dataframes_enabled = dataframes_enabled
         schema_checking = QLabel('Schema checking')
         data_checking = QLabel('Data checking')
-        grid.addWidget(schema_checking, 0, 0)
-        grid.addWidget(self.progress_schema, 0, 1)
-        grid.addWidget(self.schema_label, 1, 0)
-        grid.addWidget(data_checking, 2, 0)
-        grid.addWidget(self.progress_data, 2, 1)
-        grid.addWidget(self.data_label, 3, 0)
+        grid.addWidget(schema_checking, 0, 0, 1, 1)
+        grid.addWidget(self.progress_schema, 0, 1, 1, 1)
+        grid.addWidget(self.schema_label, 1, 0, 1, 2)
+        grid.addWidget(data_checking, 2, 0, 1, 1)
+        grid.addWidget(self.progress_data, 2, 1, 1, 1)
+        grid.addWidget(self.data_label, 3, 0, 1, 2)
         if not self.check_schema:
             schema_checking.setVisible(False)
             self.progress_schema.setVisible(False)

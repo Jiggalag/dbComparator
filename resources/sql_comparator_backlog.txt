@@ -1,16 +1,14 @@
 Enchancements:
 
-1. Fix cutting of schema_label and data_label in progress window.
-2. Comparing step should be moved from UI. Instead of manually possibility of setting comparing step I should implement
+1. Comparing step should be moved from UI. Instead of manually possibility of setting comparing step I should implement
 feature which automatically changes comparing step in case of slow or fast connection. Logic: if comparing speed lower
 than some hardcoded value, I should decrease comparing step.
-? 3. Status bar should updates in background, application should ping servers by some timeout
-4. Bug. datetime writed to result file in format datetime(2018-08-09) it's incorrect.
-5. Fix sendmail. # probably with configuring on gmail side.
-6. Add special search lineedits to modal windows like "skip_tables".
-7. Only first error flag not works.
-8. On progress window fix "Processing"-string. It should be made with different layout to not cut tablenames.
-9. Fix hanging of comparator on huge tables (like creative_page_position for irving).
+? 2. Status bar should updates in background, application should ping servers by some timeout
+3. Bug. datetime writed to result file in format datetime(2018-08-09) it's incorrect.
+4. Fix sendmail. # probably with configuring on gmail side.
+5. Add special search lineedits to modal windows like "skip_tables".
+6. Only first error flag not works.
+7. Fix hanging of comparator on huge tables (like creative_page_position for irving).
 
 
 Epics:
