@@ -1,6 +1,6 @@
 import datetime
 
-from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplication, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QDialog, QProgressBar, QGridLayout, QLabel, QApplication
 
 
 class ProgressWindow(QDialog):
@@ -63,9 +63,9 @@ class ProgressWindow(QDialog):
             self.progress_data.setValue(self.completed)
             self.data_label.setText(f'Processing of {table} table...')
             is_report = self.tables.get(table).get('is_report')
-            if self.dataframes_enabled:
-                pass
-                # TODO add dataframe realisation
+            if self.dataframes_enabled:  # TODO: should be worked only with dataframes
+                self.comparing_object.compare_df_data(service_dir=self.service_dir, mapping=self.mapping, table=table,
+                                                      is_report=is_report)
             else:
                 self.comparing_object.compare_data(service_dir=self.service_dir, mapping=self.mapping, table=table,
                                                    is_report=is_report)

@@ -5,10 +5,9 @@ import pandas as pd
 def get_metadata_dataframe_diff(prod_columns, test_columns, logger):
     prod_columnnames_set = set(prod_columns.COLUMN_NAME.values.tolist())
     test_columnnames_set = set(test_columns.COLUMN_NAME.values.tolist())
-    prod_uniq = set(prod_columns.COLUMN_NAME.values.tolist()) - set(test_columns.COLUMN_NAME.values.tolist())
-    test_uniq = set(test_columns.COLUMN_NAME.values.tolist()) - set(prod_columns.COLUMN_NAME.values.tolist())
+    prod_uniq = set(prod_columnnames_set - test_columnnames_set)
+    test_uniq = set(test_columnnames_set - prod_columnnames_set)
     # TODO: clarify, how I can dynamically set indexes for different tables
-    # df_all = pd.concat([prod_columns.set_index('id'), test_columns.set_index('id')], axis='columns', keys=['First', 'Second'])
     if not any([prod_uniq, test_uniq]):
         prod_columns.fillna(value=pd.np.nan, inplace=True)
         prod_columns = prod_columns.fillna(0)
@@ -18,7 +17,6 @@ def get_metadata_dataframe_diff(prod_columns, test_columns, logger):
             result_dataframe = (prod_columns == test_columns)
         except ValueError as e:
             logger.warn(e)
-            # TODO: add logic for comparing non-identically labeled DataFrame object
         if all(result_dataframe):
             return pd.DataFrame()
         else:
@@ -34,8 +32,6 @@ def get_metadata_dataframe_diff(prod_columns, test_columns, logger):
 
 
 def get_dataframes_diff(prod_columns, test_columns, logger):
-    # TODO: clarify, how I can dynamically set indexes for different tables
-    # df_all = pd.concat([prod_columns.set_index('id'), test_columns.set_index('id')], axis='columns', keys=['First', 'Second'])
     prod_columns.fillna(value=pd.np.nan, inplace=True)
     prod_columns = prod_columns.fillna(0)
     test_columns.fillna(value=pd.np.nan, inplace=True)

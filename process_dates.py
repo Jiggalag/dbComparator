@@ -13,7 +13,7 @@ class ProcessDates:
 
     def compare_dates(self, comparing_info):
         select_query = f"SELECT distinct(`dt`) from {self.table};"
-        prod_dates, test_dates = dbcmp_sql_helper.get_comparable_objects([self.prod_connection,
+        prod_dates, test_dates = dbcmp_sql_helper.get_raw_objects([self.prod_connection,
                                                                           self.test_connection],
                                                                          select_query)
         if (prod_dates is None) or (test_dates is None):

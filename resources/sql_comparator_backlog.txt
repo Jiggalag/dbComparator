@@ -9,6 +9,8 @@ than some hardcoded value, I should decrease comparing step.
 5. Add special search lineedits to modal windows like "skip_tables".
 6. Only first error flag not works.
 7. Fix hanging of comparator on huge tables (like creative_page_position for irving).
+8. Implement threads - UI shouldn't hangs on checknig connection to mysql-server.
+9. Implement timeout for starting of checking connection to mysql-server.
 
 
 Epics:

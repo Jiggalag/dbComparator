@@ -143,6 +143,25 @@ class Object:
         self.logger.info(f'Comparing finished in {data_comparing_time}')
         return True
 
+    def compare_df_data(self, service_dir, mapping, table, is_report):
+        start_time = datetime.datetime.now()
+        start_table_check_time = datetime.datetime.now()
+        self.logger.info(f"Table {table} processing started now...")
+        self.sql_comparing_properties.update({'service_dir': service_dir})
+        compared_table = Comparation(self.prod_sql_connection, self.test_sql_connection, table, self.logger,
+                                     self.sql_comparing_properties)
+        global_break = compared_table.compare_table(is_report, mapping, start_time, self.comparing_info,
+                                                    self.comparing_step)
+        self.logger.info(f"Table {table} checked in {datetime.datetime.now() - start_table_check_time}...")
+        if global_break:
+            data_comparing_time = datetime.datetime.now() - start_time
+            self.logger.warn(f'Global breaking is True. Comparing interrupted. Comparing finished in '
+                             f'{data_comparing_time}')
+            return data_comparing_time
+        data_comparing_time = datetime.datetime.now() - start_time
+        self.logger.info(f'Comparing finished in {data_comparing_time}')
+        return True
+
     def compare_table_metadata(self, table):
         start_time = datetime.datetime.now()
         self.logger.info(f"Check schema for table {table}...")
@@ -150,9 +169,9 @@ class Object:
         query = (f"SELECT {schema_columns} FROM INFORMATION_SCHEMA.COLUMNS " +
                  f"WHERE TABLE_SCHEMA = 'DBNAME' AND TABLE_NAME='TABLENAME' ".replace("TABLENAME", table) +
                  f"ORDER BY COLUMN_NAME")
-        prod_columns, test_columns = dbcmp_sql_helper.get_comparable_objects([self.prod_sql_connection.engine,
-                                                                              self.test_sql_connection.engine],
-                                                                             query)
+        prod_columns, test_columns = dbcmp_sql_helper.get_raw_objects([self.prod_sql_connection.engine,
+                                                                       self.test_sql_connection.engine],
+                                                                      query)
         if (prod_columns is None) or (test_columns is None):
             self.logger.warn(f'Table {table} skipped because something going bad')
             return False
@@ -165,6 +184,7 @@ class Object:
         self.logger.debug(f"Schema of table {table} compared in {schema_comparing_time}")
         return True
 
-    def get_single_column_dataframe(self, connection, table, columnname):
-        query = (f"SELECT {columnname} from DBNAME.{table};")
+    @staticmethod
+    def get_single_column_dataframe(connection, table, columnname):
+        query = f"SELECT {columnname} from DBNAME.{table};"
         return dbcmp_sql_helper.get_raw_object(connection, query)

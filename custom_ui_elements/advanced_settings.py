@@ -61,12 +61,12 @@ class AdvancedSettingsItem(QDialog):
         logging_level_label.setToolTip('Messages with this label and higher will be writed to logs')
         self.cb_logging_level.setToolTip('Messages with this label and higher will be writed to logs')
         comparing_step_label.setToolTip(('Max amount of records which should be requested in single sql-query\n' +
-                                         'Do not touch this value if you not shure!'))
+                                         'Do not touch this value if you not sure!'))
         self.le_comparing_step.setToolTip(self.le_comparing_step.text())
         depth_report_check_label.setToolTip('Amount of days in past, which should be compared in case of report tables')
         self.le_depth_report_check.setToolTip(self.le_depth_report_check.text())
         schema_columns_label.setToolTip(('List of columns, which should be compared during schema comparing\n' +
-                                         'Do not touch this value if you not shure!'))
+                                         'Do not touch this value if you not sure!'))
         self.le_schema_columns.setToolTip(self.le_schema_columns.text().replace(',', ',\n'))
         retry_attempts_label.setToolTip('Amount of attempts for reconnecting to dbs in case of connection lost error')
         self.le_retry_attempts.setToolTip(self.le_retry_attempts.text())
@@ -75,7 +75,7 @@ class AdvancedSettingsItem(QDialog):
         table_timeout_label.setToolTip('Timeout in minutes for checking any single table')
         self.le_table_timeout.setToolTip(self.le_table_timeout.text())
         strings_amount_label.setToolTip(('Maximum amount of uniqs for single table.\n' +
-                                         'When amount of uniqs exceeds this threshould, checking of this table\n' +
+                                         'When amount of uniqs exceeds this threshold, checking of this table\n' +
                                          'will be interrupted, and uniqs will be stored in file in /tmp/comparator\n' +
                                          'directory'))
         self.le_strings_amount.setToolTip(self.le_strings_amount.text())

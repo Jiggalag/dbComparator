@@ -1,7 +1,8 @@
 from multiprocessing.dummy import Pool
 import pandas as pd
 import sqlalchemy
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func, MetaData
+from sqlalchemy.orm import sessionmaker
 
 
 class DbAlchemyHelper:
@@ -14,6 +15,7 @@ class DbAlchemyHelper:
         self.db = connect_parameters.get('db')
         self.db_not_found = False
         self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}')
+        Session = sessionmaker(bind=self.engine)
         self.logger = logger
         try:
             self.connection = self.engine.connect()
@@ -25,6 +27,8 @@ class DbAlchemyHelper:
                 else:
                     self.connection.execute(f'USE {self.db};')
                     self.engine = create_engine(f'mysql+pymysql://{self.user}:{self.password}@{self.host}/{self.db}')
+                    self.session = Session()
+                    self.metadata = MetaData(bind=self.engine, reflect=True)
             self.hide_columns = [
                 'archived',
                 'addonFields',
@@ -65,6 +69,7 @@ class DbAlchemyHelper:
             self.set_keyvalues(**kwargs)
         except sqlalchemy.exc.OperationalError as e:
             self.logger.error(e)
+            self.connection = None
 
     def select(self, query):
         if self.connection is not None:
@@ -106,17 +111,6 @@ class DbAlchemyHelper:
             if 'read_timeout' in key:
                 self.read_timeout = int(kwargs.get(key))
             return self
-
-    def get_tables(self):
-        if self.connection is not None and not self.db_not_found:
-            show_tables = (f"SELECT DISTINCT(table_name) FROM information_schema.columns "
-                           f"WHERE table_schema LIKE '{self.db}';")
-            result = list()
-            for item in self.connection.execute(show_tables):
-                result.append(item[0])
-            return result
-        else:
-            return None
 
     def get_tables_columns(self):
         if self.connection is not None and not self.db_not_found:
@@ -175,9 +169,13 @@ def get_amount_records(table, dates, sql_connection_list):
         query = f"SELECT COUNT(*) FROM `{table}`;"
     else:
         query = f"SELECT COUNT(*) FROM `{table}` WHERE dt >= '{dates[0]}';"
-    result = get_comparable_objects(sql_connection_list, query)
+    result = get_raw_objects(sql_connection_list, query)
     return result[0].values[0][0], result[1].values[0][0]
 
+def get_count(q):
+    count_q = q.statement.with_only_columns([func.count()]).order_by(None)
+    count = q.session.execute(count_q).scalar()
+    return count
 
 # TODO: strongly refactor this code!
 def get_raw_objects(connection_list, query):
@@ -185,22 +183,15 @@ def get_raw_objects(connection_list, query):
     if (result[0] is None) or (result[1] is None):
         return None, None
     else:
+        if len(result[0].index) != len(result[1].index):
+            return result[0], result[1]
+        result[0].sort_index(axis=1)
+        result[1].sort_index(axis=1)
         return result[0], result[1]
 
 
 def get_raw_object(connection, query):
     return pd.read_sql(query.replace('DBNAME', connection.url.database), connection)
-
-
-# returns list for easy convertation to set
-# TODO: remove this interlayer
-def get_comparable_objects(connection_list, query):
-    result = get_raw_objects(connection_list, query)
-    if len(result[0].index) != len(result[1].index):
-        return result[0], result[1]
-    result[0].sort_index(axis=1)
-    result[1].sort_index(axis=1)
-    return result[0], result[1]
 
 
 def get_column_list_for_sum(set_column_list):

@@ -8,7 +8,6 @@ import shutil
 import sys
 
 import PyQt5
-import pymysql
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QLabel, QGridLayout, QWidget, QLineEdit, QCheckBox, QPushButton, QMessageBox
@@ -23,6 +22,7 @@ from custom_ui_elements.clickable_lineedit import ClickableLineEdit
 from custom_ui_elements.progress_window import ProgressWindow
 from custom_ui_elements.radiobutton_items_view import RadiobuttonItemsView
 from helpers import dbcmp_sql_helper
+from helpers.connection_checker import ConnChecker
 
 if "Win" in platform.system():
     operating_system = "Windows"
@@ -97,25 +97,26 @@ class MainUI(QWidget):
         # Line edits
 
         self.le_prod_host = QLineEdit(self)
-        self.le_prod_host.textChanged.connect(lambda: self.check_sqlhost('prod'))
+        # self.le_prod_host.textChanged.connect(lambda: self.check_sqlhost('prod'))
+        self.le_prod_host.textChanged.connect(self.update_access_data)
         self.le_prod_user = QLineEdit(self)
-        self.le_prod_user.textChanged.connect(lambda: self.check_sqlhost('prod'))
+        self.le_prod_user.textChanged.connect(self.update_access_data)
         self.le_prod_password = QLineEdit(self)
         self.le_prod_password.setEchoMode(QLineEdit.Password)
-        self.le_prod_password.textChanged.connect(lambda: self.check_sqlhost('prod'))
+        self.le_prod_password.textChanged.connect(self.update_access_data)
         self.le_prod_db = ClickableLineEdit(self)
-        self.le_prod_db.textChanged.connect(lambda: self.check_db('prod'))
+        self.le_prod_db.textChanged.connect(self.update_access_data)
         self.le_prod_db.clicked.connect(self.set_prod_db)
         self.le_prod_db.hide()
         self.le_test_host = QLineEdit(self)
-        self.le_test_host.textChanged.connect(lambda: self.check_sqlhost('test'))
+        self.le_test_host.textChanged.connect(self.update_access_data)
         self.le_test_user = QLineEdit(self)
-        self.le_test_user.textChanged.connect(lambda: self.check_sqlhost('test'))
+        self.le_test_user.textChanged.connect(self.update_access_data)
         self.le_test_password = QLineEdit(self)
         self.le_test_password.setEchoMode(QLineEdit.Password)
-        self.le_test_password.textChanged.connect(lambda: self.check_sqlhost('test'))
+        self.le_test_password.textChanged.connect(self.update_access_data)
         self.le_test_db = ClickableLineEdit(self)
-        self.le_test_db.textChanged.connect(lambda: self.check_db('test'))
+        self.le_test_db.textChanged.connect(self.update_access_data)
         self.le_test_db.clicked.connect(self.set_test_db)
         self.le_test_db.hide()
         self.le_send_mail_to = QLineEdit(self)
@@ -152,6 +153,12 @@ class MainUI(QWidget):
         self.btn_clear_all.clicked.connect(self.clear_all)
         self.btn_advanced = QPushButton('Advanced', self)
         self.btn_advanced.clicked.connect(self.advanced)
+        self.btn_prod_connect = QPushButton('Check prod connection')
+        self.btn_prod_connect.clicked.connect(lambda: self.check_connection('prod'))
+        self.btn_prod_connect.setEnabled(False)
+        self.btn_test_connect = QPushButton('Check test connection')
+        self.btn_test_connect.clicked.connect(lambda: self.check_connection('test'))
+        self.btn_test_connect.setEnabled(False)
 
         # Radiobuttons
 
@@ -205,6 +212,7 @@ class MainUI(QWidget):
         grid.addWidget(self.le_prod_password, 2, 1)
         grid.addWidget(self.prod_db_label, 3, 0)
         grid.addWidget(self.le_prod_db, 3, 1)
+        grid.addWidget(self.btn_prod_connect, 4, 1)
         grid.addWidget(self.test_host_label, 0, 2)
         grid.addWidget(self.le_test_host, 0, 3)
         grid.addWidget(self.test_user_label, 1, 2)
@@ -213,6 +221,7 @@ class MainUI(QWidget):
         grid.addWidget(self.le_test_password, 2, 3)
         grid.addWidget(self.test_db_label, 3, 2)
         grid.addWidget(self.le_test_db, 3, 3)
+        grid.addWidget(self.btn_test_connect, 4, 3)
         grid.addWidget(self.send_mail_to_label, 6, 0)
         grid.addWidget(self.le_send_mail_to, 6, 1)
         grid.addWidget(self.only_tables_label, 7, 0)
@@ -333,12 +342,12 @@ class MainUI(QWidget):
                 else:
                     self.logger.error(f"There is different columns for table {table}.")
                     self.logger.warning(f"Table {table} excluded from comparing")
-                    prod_uniq_columns = set(prod_columns) - set(test_columns)
-                    test_uniq_columns = set(test_columns) - set(prod_columns)
-                    if prod_uniq_columns:
-                        self.logger.info(f"Uniq columns for prod {table}: {prod_uniq_columns}")
-                    if test_uniq_columns:
-                        self.logger.info(f"Uniq columns for test {table}: {test_uniq_columns}")
+                    prod_unique_columns = set(prod_columns) - set(test_columns)
+                    test_unique_columns = set(test_columns) - set(prod_columns)
+                    if prod_unique_columns:
+                        self.logger.info(f"Unique columns for prod {table}: {prod_unique_columns}")
+                    if test_unique_columns:
+                        self.logger.info(f"Unique columns for test {table}: {test_unique_columns}")
             self.tables_for_ui = self.tables.copy()
             self.calculate_excluded_columns()
 
@@ -392,6 +401,7 @@ class MainUI(QWidget):
         select_db_view.exec_()
         self.le_prod_db.setText(select_db_view.selected_db)
         self.le_prod_db.setToolTip(self.le_prod_db.text())
+        self.change_bar_message('prod', True)
 
     def set_test_db(self):
         test_db = self.le_test_db.text()
@@ -399,6 +409,7 @@ class MainUI(QWidget):
         select_db_view.exec_()
         self.le_test_db.setText(select_db_view.selected_db)
         self.le_test_db.setToolTip(self.le_test_db.text())
+        self.change_bar_message('test', True)
 
     def set_excluded_tables(self):
         if all([self.prod_connect, self.test_connect]):
@@ -431,10 +442,10 @@ class MainUI(QWidget):
 
     def load_configuration(self):
         current_dir = f'{os.getcwd()}/resources/properties/'
-        fname = QFileDialog.getOpenFileName(PyQt5.QtWidgets.QFileDialog(), 'Open file', current_dir)[0]
+        file_name = QFileDialog.getOpenFileName(PyQt5.QtWidgets.QFileDialog(), 'Open file', current_dir)[0]
         self.clear_all()
         try:
-            with open(fname, 'r') as file:
+            with open(file_name, 'r') as file:
                 data = file.read()
                 for record in data.split('\n'):
                     string = record.replace(' ', '')
@@ -467,7 +478,7 @@ class MainUI(QWidget):
                                     tmp = tmp + table + ','
                                 else:
                                     self.logger.warning(f'Table {table} excluded from only_table section '
-                                                     f'because it differs on both databases')
+                                                        f'because it differs on both databases')
                         self.set_value(self.le_only_tables, tmp)
                     elif 'skip_tables' in string:
                         self.set_value(self.le_excluded_tables, value)
@@ -641,7 +652,7 @@ class MainUI(QWidget):
                 int(self.strings_amount)
                 text.append(f'string_amount = {self.strings_amount}')
             except ValueError:
-                non_verified.update({'Amount of stored uniq strings': self.strings_amount})
+                non_verified.update({'Amount of stored unique strings': self.strings_amount})
         if non_verified:
             text = ''
             for item in non_verified.keys():
@@ -671,7 +682,7 @@ class MainUI(QWidget):
         if file_name:
             with open(file_name, 'w') as file:
                 file.write('\n'.join(text))
-            print(f'Configuration successfully saved to {file_name}')  # TODO: fix this
+            self.logger.info(f'Configuration successfully saved to {file_name}')  # TODO: fix this
 
     @staticmethod
     def exit():
@@ -698,6 +709,58 @@ class MainUI(QWidget):
         if all([self.prod_connect, self.test_connect]):
             self.btn_set_configuration.setEnabled(True)
             self.calculate_table_list()
+
+    def update_access_data(self):
+        self.prod_access_data = {
+            'host': self.le_prod_host.text(),
+            'user': self.le_prod_user.text(),
+            'password': self.le_prod_password.text(),
+            'db': self.le_prod_db.text()
+        }
+        self.test_access_data = {
+            'host': self.le_test_host.text(),
+            'user': self.le_test_user.text(),
+            'password': self.le_test_password.text(),
+            'db': self.le_test_db.text()
+        }
+        if all([self.le_prod_host.text(), self.le_prod_user.text(), self.le_prod_password.text()]):
+            self.btn_prod_connect.setEnabled(True)
+        if all([self.le_test_host.text(), self.le_test_user.text(), self.le_test_password.text()]):
+            self.btn_test_connect.setEnabled(True)
+        # self.check_connection('prod')
+        # self.check_connection('test')
+
+    def check_connection(self, instance_type):
+        QApplication.processEvents()
+        if instance_type == 'prod':
+            host = self.prod_access_data.get('host')
+            user = self.prod_access_data.get('user')
+            password = self.prod_access_data.get('password')
+            db = self.prod_access_data.get('db')
+        else:
+            host = self.test_access_data.get('host')
+            user = self.test_access_data.get('user')
+            password = self.test_access_data.get('password')
+            db = self.test_access_data.get('db')
+        if all([host, user, password, db]):
+            connect = ConnChecker(host, user, password, self.logger, db=db)
+            connect.start()
+            connect.wait()
+            connect.quit()
+            if connect.tables is not None:
+                print(connect.tables)
+        elif all([host, user, password]):
+            connect = ConnChecker(host, user, password, self.logger)
+            connect.start()
+            connect.wait()
+            connect.quit()
+            if connect.dbs is not None:
+                if instance_type == 'prod':
+                    self.le_prod_db.show()
+                    self.prod_db_list = list(connect.dbs)
+                else:
+                    self.le_test_db.show()
+                    self.test_db_list = list(connect.dbs)
 
     def check_db(self, instance_type):
         if instance_type not in ['prod', 'test']:
@@ -760,74 +823,37 @@ class MainUI(QWidget):
             else:
                 self.logger.debug(f'Field {instance_type}.sql-db is not filled')
 
-
-    def check_sqlhost(self, instance_type):
-        self.check_db(instance_type)
-        if instance_type not in ['prod', 'test']:
-            self.logger.critical(f'Unknown instance type {instance_type}, fix this in code!')
-            sys.exit(1)  # TODO: use fail-fast
-        if instance_type == 'prod':
-            host = self.le_prod_host.text()
-            user = self.le_prod_user.text()
-            password = self.le_prod_password.text()
-        else:
-            host = self.le_test_host.text()
-            user = self.le_test_user.text()
-            password = self.le_test_password.text()
-        if all([host, user, password]):
-            access_data = {
-                'host': host,
-                'user': user,
-                'password': password
-            }
-            try:
-                if instance_type == 'prod':
-                    self.prod_db_list = dbcmp_sql_helper.DbAlchemyHelper(access_data, self.logger).db_list
-                    self.prod_db_label.show()
-                    self.le_prod_db.show()
-                    self.logger.info(f"Connection to {access_data.get('host')} established successfully!")
-                    self.change_bar_message('prod', True)
-                    return True
-                else:
-                    self.test_db_list = dbcmp_sql_helper.DbAlchemyHelper(access_data, self.logger).db_list
-                    self.test_db_label.show()
-                    self.le_test_db.show()
-                    self.logger.info(f"Connection to {access_data.get('host')} established successfully!")
-                    self.change_bar_message('test', True)
-                    return True
-            except pymysql.OperationalError as err:
-                self.logger.warning(f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}")
-                QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                    f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}",
-                                    QMessageBox.Ok, QMessageBox.Ok)
-                return False
-            except pymysql.InternalError as err:
-                self.logger.warning(f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}")
-                QMessageBox.warning(PyQt5.QtWidgets.QMessageBox(), 'Warning',
-                                    f"Connection to {access_data.get('host')} failed\n\n{err.args[1]}",
-                                    QMessageBox.Ok, QMessageBox.Ok)
-                return False
-        else:
-            return False
-
     def get_sql_params(self):
-        empty_fields = []
-        if not self.le_prod_host.text():
-            empty_fields.append('prod.host')
-        if not self.le_prod_user.text():
-            empty_fields.append('prod.user')
-        if not self.le_prod_password.text():
-            empty_fields.append('prod.password')
-        if not self.le_prod_db.text():
-            empty_fields.append('prod.db')
-        if not self.le_test_host.text():
-            empty_fields.append('test.host')
-        if not self.le_test_user.text():
-            empty_fields.append('test.user')
-        if not self.le_test_password.text():
-            empty_fields.append('test.password')
-        if not self.le_test_db.text():
-            empty_fields.append('test.db')
+        empty_fields = list()
+        ui_dict = {
+            self.le_prod_host: 'prod.host',
+            self.le_prod_user: 'prod.user',
+            self.le_prod_password: 'prod.password',
+            self.le_prod_db: 'prod.db',
+            self.le_test_host: 'test.host',
+            self.le_test_user: 'test.user',
+            self.le_test_password: 'test.password',
+            self.le_test_db: 'test.db'
+        }
+        for item in ui_dict:
+            if not item.text():
+                empty_fields.append(ui_dict.get(item))
+        # if not self.le_prod_host.text():
+        #     empty_fields.append('prod.host')
+        # if not self.le_prod_user.text():
+        #     empty_fields.append('prod.user')
+        # if not self.le_prod_password.text():
+        #     empty_fields.append('prod.password')
+        # if not self.le_prod_db.text():
+        #     empty_fields.append('prod.db')
+        # if not self.le_test_host.text():
+        #     empty_fields.append('test.host')
+        # if not self.le_test_user.text():
+        #     empty_fields.append('test.user')
+        # if not self.le_test_password.text():
+        #     empty_fields.append('test.password')
+        # if not self.le_test_db.text():
+        #     empty_fields.append('test.db')
         if empty_fields:
             if len(empty_fields) == 1:
                 QMessageBox.question(PyQt5.QtWidgets.QMessageBox(), 'Error', "Please, set this parameter:\n\n" +
@@ -925,8 +951,8 @@ class MainUI(QWidget):
                 self.check_service_dir(self.service_dir)
                 self.check_service_dir(self.test_dir)
                 comparing_info = table_data.Info(self.logger)
-                comparing_info.update_table_list("prod", self.prod_sql_connection.get_tables())
-                comparing_info.update_table_list("test", self.test_sql_connection.get_tables())
+                comparing_info.update_table_list("prod", list(self.prod_sql_connection.metadata.tables))
+                comparing_info.update_table_list("test", list(self.test_sql_connection.metadata.tables))
                 mapping = query_constructor.prepare_column_mapping(self.prod_sql_connection, self.logger)
                 comparing_object = sql_comparing.Object(self.prod_sql_connection, self.test_sql_connection, properties,
                                                         comparing_info)
