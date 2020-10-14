@@ -19,8 +19,8 @@ class DbAlchemyHelper:
         self.logger = logger
         try:
             self.connection = self.engine.connect()
-            self.insp = sqlalchemy.inspect(self.engine)
-            self.db_list = self.insp.get_schema_names()
+            self.inspection = sqlalchemy.inspect(self.engine)
+            self.db_list = self.inspection.get_schema_names()
             if self.db is not None and self.db_list:
                 if self.db not in self.db_list:
                     self.db_not_found = True
@@ -172,10 +172,12 @@ def get_amount_records(table, dates, sql_connection_list):
     result = get_raw_objects(sql_connection_list, query)
     return result[0].values[0][0], result[1].values[0][0]
 
+
 def get_count(q):
     count_q = q.statement.with_only_columns([func.count()]).order_by(None)
     count = q.session.execute(count_q).scalar()
     return count
+
 
 # TODO: strongly refactor this code!
 def get_raw_objects(connection_list, query):
