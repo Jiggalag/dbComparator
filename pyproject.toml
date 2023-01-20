@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "dbcomparator"
+version = "0.1.0"
+description = ""
+authors = ["Pavel Kiselev <p.kiselev@admitad.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+PyMySQL = "^0.9.3"
+PyQt5 = "^5.15.7"
+SQLAlchemy = "^1.4.0"
+pandas = "^1.5.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
